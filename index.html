@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreechxRed</title>
+
+    <!-- Fontes e Ícones -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="scripts/style.css">
+
+    <!-- Dependências JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    <script src="scripts/script.js" defer></script>
+    <script src="scripts/registros.js" defer></script>
+    <script src="scripts/gestão.js" defer></script>
+    <script src="scripts/chat.js" defer></script>
+</head>
+<body>
+
+<!-- CABEÇALHO PRINCIPAL -->
+<header>
+    <div class="header-content">
+        <div class="logo-title">
+            <div class="logo-box">
+                <div>
+                    <h1>FreechxRed</h1>
+                    <h3>Sistema Geral de Catalogação e Consulta</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="user-panel">
+            <i class="fa-solid fa-user-circle fa-lg"></i>
+            <div>
+                <div id="lblUserName" style="font-size: 0.85rem; font-weight: 600;">Visitante (Público)</div>
+                <span id="lblUserRole" class="role-badge role-usuario">USUÁRIO</span>
+            </div>
+            <button id="btnHeaderLogin" class="btn-switch-user" onclick="abrirModalLogin()">
+                <i class="fa-solid fa-right-to-bracket"></i> Entrar / Login
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- BARRA DE NAVEGAÇÃO PRINCIPAL -->
+<nav class="main-nav">
+    <div class="nav-container">
+        <button class="nav-tab active" id="tabNavConsulta" onclick="trocarAba('consulta', event)">
+            <i class="fa-solid fa-magnifying-glass"></i> Consulta ao Acervo
+        </button>
+        <button class="nav-tab" id="tabNavPerfil" style="display: none;" onclick="trocarAba('perfil', event)">
+            <i class="fa-solid fa-id-card-clip"></i> Minha Área
+        </button>
+        <button class="nav-tab" id="tabNavCirculacao" style="display: none;" onclick="trocarAba('circulacao', event)">
+            <i class="fa-solid fa-arrows-rotate"></i> Empréstimos & Reservas
+        </button>
+        <button class="nav-tab" id="tabNavCatalogacao" style="display: none;" onclick="trocarAba('catalogacao', event)">
+            <i class="fa-solid fa-file-pen"></i> Catalogação MARC21
+        </button>
+        <button class="nav-tab" id="tabNavUsuarios" style="display: none;" onclick="trocarAba('usuarios', event)">
+            <i class="fa-solid fa-users-gear"></i> Gestão de Usuários
+        </button>
+        <button class="nav-tab" id="tabNavLixeira" style="display: none;" onclick="trocarAba('lixeira', event)">
+            <i class="fa-solid fa-trash-can"></i> Lixeira
+        </button>
+    </div>
+</nav>
+
+<!-- CONTEÚDO PRINCIPAL -->
+<main class="container">
+
+    <!-- 1. ABA DE CONSULTA AO ACERVO -->
+    <section id="tab-consulta" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-search"></i> Pesquisa no Acervo</span>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <input type="text" id="txtBusca" placeholder="Digite Título, Autor, Assunto, Tombo, ISBN ou CDD..." onkeyup="filtrarAcervo()">
+                </div>
+            </div>
+
+            <div class="acervo-toolbar" style="margin-top: 16px;">
+                <button class="btn-view-toggle active" id="btnVisaoLista" onclick="alternarVisaoAcervo('lista')">
+                    <i class="fa-solid fa-list-ul"></i> Exibição em Lista
+                </button>
+                <button class="btn-view-toggle" id="btnVisaoGrade" onclick="alternarVisaoAcervo('grade')">
+                    <i class="fa-solid fa-table-cells-large"></i> Visão em Prateleira
+                </button>
+            </div>
+
+            <div id="visaoListaAcervo" class="acervo-list"></div>
+
+            <div id="visaoGradeAcervo" class="acervo-secoes-container" style="display: none;">
+                <section class="acervo-secao">
+                    <div class="acervo-secao-titulo">
+                        <i class="fa-solid fa-fire"></i><span>Mais Populares</span><span class="acervo-secao-tag">Em Alta</span>
+                    </div>
+                    <div class="acervo-carousel-wrapper">
+                        <button type="button" class="carousel-nav-btn prev" onclick="rolarCarrossel('populares', -300)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div class="acervo-carousel" id="populares"></div>
+                        <button type="button" class="carousel-nav-btn next" onclick="rolarCarrossel('populares', 300)"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </section>
+
+                <section class="acervo-secao">
+                    <div class="acervo-secao-titulo">
+                        <i class="fa-solid fa-sparkles"></i><span>Recém-chegados</span><span class="acervo-secao-tag">Novidades</span>
+                    </div>
+                    <div class="acervo-carousel-wrapper">
+                        <button type="button" class="carousel-nav-btn prev" onclick="rolarCarrossel('recemChegados', -300)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div class="acervo-carousel" id="recemChegados"></div>
+                        <button type="button" class="carousel-nav-btn next" onclick="rolarCarrossel('recemChegados', 300)"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </section>
+
+                <section class="acervo-secao">
+                    <div class="acervo-secao-titulo">
+                        <i class="fa-solid fa-hand-holding-heart"></i><span>Disponíveis para Doação</span><span class="acervo-secao-tag">Doação</span>
+                    </div>
+                    <div class="acervo-carousel-wrapper">
+                        <button type="button" class="carousel-nav-btn prev" onclick="rolarCarrossel('doacao', -300)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div class="acervo-carousel" id="doacao"></div>
+                        <button type="button" class="carousel-nav-btn next" onclick="rolarCarrossel('doacao', 300)"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. ABA MINHA ÁREA -->
+    <section id="tab-perfil" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-user"></i> Painel Pessoal do Leitor & Social</span>
+            </div>
+
+            <div class="grid-two-columns">
+                <!-- PAINEL DE FAVORITOS OTIMIZADO COM SUPORTE À CAPA DO LIVRO -->
+                <div class="card" style="margin:0;">
+                    <div class="card-header">
+                        <span class="card-title" style="font-size:1rem;"><i class="fa-solid fa-heart" style="color:var(--accent-red);"></i> Meus Favoritos</span>
+                    </div>
+                    <div id="meusFavoritosContainer" class="acervo-list favorite-list-container">
+                        <!-- Exemplo da estrutura HTML injetada via JS com capa -->
+                        <!-- 
+                        <div class="favorite-item">
+                            <div class="book-info">
+                                <img src="caminho-ou-url-da-capa.jpg" alt="Capa" class="book-cover" onerror="this.src='caminho/para/capa-padrao.jpg'">
+                                <div class="book-details">
+                                    <span class="book-title">Frankstein</span>
+                                    <span class="book-author">Mary Shelley</span>
+                                </div>
+                            </div>
+                            <button class="btn-remove" onclick="removerFavorito(id)">
+                                <i class="fa-solid fa-trash"></i> Remover
+                            </button>
+                        </div>
+                        -->
+                        <p style="color:var(--text-muted); padding:10px;">Nenhum livro favoritado.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin:0;">
+                    <div class="card-header">
+                        <span class="card-title" style="font-size:1rem;"><i class="fa-solid fa-bookmark" style="color:var(--accent-color);"></i> Minhas Reservas</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Livro</th>
+                                    <th>Data</th>
+                                    <th>Status</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbMinhasReservas">
+                                <tr><td colspan="4">Nenhuma reserva ativa.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO DE CHAT E CLUBE DO LEITOR -->
+            <div class="card" style="margin-top:20px;">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="card-title" style="font-size:1rem;"><i class="fa-solid fa-comments"></i> Chat & Clubes do Leitor</span>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-outline" style="font-size:0.8rem; padding:6px 12px;" onclick="abrirModalNovoChatP2P()"><i class="fa-solid fa-user-plus"></i> Conversar com Usuário</button>
+                        <button class="btn btn-primary" style="font-size:0.8rem; padding:6px 12px;" onclick="abrirModalNovoGrupo()"><i class="fa-solid fa-users"></i> Criar Grupo / Clube</button>
+                    </div>
+                </div>
+
+                <div class="grid-chat-layout" style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; margin-top: 15px;">
+                    <!-- LISTA DE CHATS -->
+                    <div style="border-right: 1px solid var(--border-color); padding-right: 15px;">
+                        <h5 style="font-size:0.85rem; margin-bottom:12px; color:var(--text-muted); font-weight:600;">SUAS CONVERSAS</h5>
+                        <div id="listaConversas" style="display:flex; flex-direction:column; gap:8px; max-height:550px; overflow-y:auto;">
+                            <p style="color:var(--text-muted); font-size:0.8rem;">Carregando chats...</p>
+                        </div>
+                    </div>
+
+                    <!-- PAINEL PRINCIPAL DO CHAT SELECIONADO -->
+                    <div id="painelChatAtivo" style="display:flex; flex-direction:column; min-height:550px; background:var(--bg-card); border-radius:12px; border:1px solid var(--border-color); overflow:hidden;">
+                        <div style="text-align:center; color:var(--text-muted); margin:auto; padding:60px 20px;">
+                            <i class="fa-solid fa-comments fa-3x" style="margin-bottom:15px; color:var(--primary-color); opacity:0.6;"></i>
+                            <p style="font-size:0.95rem;">Selecione ou crie uma conversa para iniciar o bate-papo e acompanhar a leitura conjunta!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:20px;">
+                <div class="card-header">
+                    <span class="card-title" style="font-size:1rem;"><i class="fa-solid fa-pen-nib"></i> Minhas Resenhas e Avaliações</span>
+                </div>
+                <div id="listaMinhasResenhas">
+                    <p style="color:var(--text-muted); padding:10px;">Você ainda não publicou resenhas.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL CRIAR NOVO GRUPO -->
+    <div class="modal-overlay" id="modalNovoGrupo">
+        <div class="modal-box">
+            <span class="close-modal" onclick="fecharModal('modalNovoGrupo')">&times;</span>
+            <h3><i class="fa-solid fa-users-gear"></i> Criar Clube do Leitor</h3>
+            <div class="form-group" style="margin-top:12px;">
+                <label>Nome do Clube / Grupo</label>
+                <input type="text" id="txtNomeNovoGrupo" placeholder="Ex: Clube de Leitura de Belém">
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+                <label>Selecione os Membros</label>
+                <div id="listaMembrosParaGrupo" style="max-height:150px; overflow-y:auto; border:1px solid var(--border-color); padding:8px; border-radius:6px;"></div>
+            </div>
+            <div class="btn-group" style="margin-top:16px;">
+                <button class="btn btn-primary" onclick="confirmarCriacaoGrupo()"><i class="fa-solid fa-check"></i> Criar Clube</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL INICIAR CHAT P2P -->
+    <div class="modal-overlay" id="modalNovoChatP2P">
+        <div class="modal-box">
+            <span class="close-modal" onclick="fecharModal('modalNovoChatP2P')">&times;</span>
+            <h3><i class="fa-solid fa-user-plus"></i> Conversar com Usuário</h3>
+            <div class="form-group" style="margin-top:12px;">
+                <label>Escolha o leitor:</label>
+                <select id="selectUsuarioP2P" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-tertiary); color:var(--text-main);"></select>
+            </div>
+            <div class="btn-group" style="margin-top:16px;">
+                <button class="btn btn-primary" onclick="confirmarCriacaoP2P()"><i class="fa-solid fa-message"></i> Iniciar Bate-papo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SELECIONAR LIVRO PARA LEITURA CONJUNTA -->
+    <div class="modal-overlay" id="modalSelecionarLivroChat">
+        <div class="modal-box" style="max-width:550px;">
+            <span class="close-modal" onclick="fecharModal('modalSelecionarLivroChat')">&times;</span>
+            <h3><i class="fa-solid fa-book-bookmark"></i> Definir Livro para Leitura Conjunta</h3>
+            
+            <div style="display:flex; gap:10px; margin:18px 0;">
+                <button class="btn btn-primary" id="btnAbaAcervoChat" style="flex:1;" onclick="alternarOrigemLivroChat('acervo')">Do Acervo System</button>
+                <button class="btn btn-outline" id="btnAbaForaChat" style="flex:1;" onclick="alternarOrigemLivroChat('fora')">Livro Externo</button>
+            </div>
+
+            <div id="boxLivroAcervoChat">
+                <div class="form-group">
+                    <label>Selecione um livro do acervo:</label>
+                    <select id="selectLivroAcervoChat" style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-tertiary); color:var(--text-main);"></select>
+                </div>
+            </div>
+
+            <div id="boxLivroForaChat" style="display:none;">
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label>Título do Livro</label>
+                    <input type="text" id="txtLivroForaTitulo" placeholder="Ex: Dom Casmurro">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label>URL da Imagem da Capa (opcional)</label>
+                    <input type="url" id="txtLivroForaCapa" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Total de Páginas</label>
+                    <input type="number" id="numLivroForaPaginas" placeholder="Ex: 256">
+                </div>
+            </div>
+
+            <div class="btn-group" style="margin-top:20px;">
+                <button class="btn btn-primary" onclick="salvarLivroLeituraConjunta()"><i class="fa-solid fa-floppy-disk"></i> Definir Livro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. ABA DE EMPRÉSTIMOS E CIRCULAÇÃO -->
+    <section id="tab-circulacao" class="tab-content">
+        <div class="grid-two-columns">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title"><i class="fa-solid fa-hand-holding-hand"></i> Registrar Empréstimo</span>
+                </div>
+                <form id="formEmprestimo" onsubmit="registrarEmprestimo(event)">
+                    <div class="form-group">
+                        <label for="selectLivroEmprestimo">Livro do Acervo</label>
+                        <select id="selectLivroEmprestimo" required>
+                            <option value="">Selecione um exemplar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="selectUsuarioEmprestimo">Usuário Solicitante</label>
+                        <select id="selectUsuarioEmprestimo" required>
+                            <option value="">Selecione o usuário...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dataDevolucaoPrevista">Data Prevista de Devolução</label>
+                        <input type="date" id="dataDevolucaoPrevista" required>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Confirmar Empréstimo</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title"><i class="fa-solid fa-list-check"></i> Empréstimos Ativos</span>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Livro</th>
+                                <th>Usuário</th>
+                                <th>Devolução</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaEmprestimosBody">
+                            <tr><td colspan="4">Nenhum empréstimo registrado.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Gestão de Reservas Solicitadas pelos Leitores</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Livro Solicitado</th>
+                            <th>Usuário</th>
+                            <th>Data Reserva</th>
+                            <th>Status</th>
+                            <th>Ações da Equipe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbGestaoReservasBody">
+                        <tr><td colspan="5">Nenhuma solicitação de reserva pendente.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. ABA DE CATALOGAÇÃO MARC21 -->
+    <section id="tab-catalogacao" class="tab-content">
+        <div id="lockCatalogacao" class="permission-denied" style="display:none;">
+            <i class="fa-solid fa-lock"></i>
+            <h2>Acesso Restrito</h2>
+            <p>Apenas Bibliotecários e Estagiários credenciados podem catalogar no sistema.</p>
+        </div>
+
+        <div id="contentCatalogacao" class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-book-bookmark"></i> Planilha de Catalogação MARC21</span>
+                <button class="btn btn-outline" onclick="limparFormulario()"><i class="fa-solid fa-eraser"></i> Limpar / Novo Registro</button>
+            </div>
+
+            <!-- CAMPOS DO FORMULÁRIO CATALOGAÇÃO MARC21 -->
+            <form id="formMARC">
+                <input type="hidden" id="livro_id" value="">
+
+                <!-- CONTROLE INTERNO E SELEÇÃO DE MATERIAL -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-image"></i> Controle Interno e Tipo de Material</div>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Capa/Imagem do Material (JPEG)</label>
+                            <input id="capa_file" type="file" accept="image/jpeg, image/jpg" onchange="carregarCapaJPEG(event)">
+                            <input type="hidden" id="capa_url" value="">
+                            <div id="previewCapaContainer" style="margin-top: 8px; display: none; align-items: center; gap: 12px;">
+                                <img id="imgPreviewCapa" src="" alt="Prévia" style="height: 80px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <button type="button" class="btn btn-outline" onclick="removerCapaJPEG()" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-xmark"></i> Remover Imagem</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="numero_tombo">Nº do Tombo (Registro Interno)</label>
+                            <input id="numero_tombo" type="text" placeholder="Auto-gerado se vazio" readonly style="background:var(--bg-tertiary); font-weight:bold; color:#38bdf8;">
+                        </div>
+                        <div class="form-group">
+                            <label for="data_reg">Data do Registro</label>
+                            <input id="data_reg" type="text" placeholder="DD/MM/AAAA" maxlength="10" oninput="formatarDataMascara(this)">
+                        </div>
+                        <div class="form-group">
+                            <label for="catalogador">Catalogador Responsável</label>
+                            <input id="catalogador" type="text" placeholder="Nome do bibliotecário/catalogador">
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo_material">Tipo de Material (AACR2 / MARC21)</label>
+                            <select id="tipo_material" onchange="alternarCamposPorTipoMaterial()">
+                                <option value="Livros" selected>Livros</option>
+                                <option value="Periodicos">Periódicos (Revistas / Jornais)</option>
+                                <option value="Tese">Tese / Dissertação</option>
+                                <option value="Cd/DVD">Cd / DVD (Som / Vídeo)</option>
+                                <option value="Foto">Foto (Material Gráfico)</option>
+                                <option value="Panfleto">Panfleto (Folheto)</option>
+                                <option value="Mapa">Mapa (Cartográfico)</option>
+                                <option value="Objeto 3D">Objeto 3D (Artefato / Maquete)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 0XX - IDENTIFICADORES E CÓDIGOS -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-barcode"></i> 0XX - Identificadores Normalizados</div>
+                    <div class="form-grid">
+                        <div class="form-group" id="grp_isbn">
+                            <label for="isbn">ISBN <span class="marc-code">(MARC 020)</span></label>
+                            <input id="isbn" type="text" placeholder="Ex: 9788535902777" onblur="buscarDadosISBN()">
+                        </div>
+                        <div class="form-group" id="grp_issn">
+                            <label for="issn">ISSN <span class="marc-code">(MARC 022)</span></label>
+                            <input id="issn" type="text" placeholder="Ex: 0100-1965">
+                        </div>
+                        <div class="form-group" id="grp_fonte_catalogacao">
+                            <label for="fonte_catalogacao">Fonte da Catalogação <span class="marc-code">(MARC 040)</span></label>
+                            <input id="fonte_catalogacao" type="text" placeholder="Ex: FreechxRed">
+                        </div>
+                        <div class="form-group" id="grp_codigo_idioma">
+                            <label for="codigo_idioma">Código do Idioma <span class="marc-code">(MARC 041)</span></label>
+                            <input id="codigo_idioma" type="text" placeholder="por">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 08X / 09X - CLASSIFICAÇÃO E CHAMADA -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-layer-group"></i> 08X / 09X - Classificação e Endereçamento</div>
+                    <div class="form-grid">
+                        <div class="form-group" id="grp_classificacao_cdd">
+                            <label for="classificacao_cdd">Classificação CDD <span class="marc-code">(MARC 082)</span></label>
+                            <input id="classificacao_cdd" type="text" placeholder="Ex: 363.1" oninput="gerarCodigoLivroMascara()">
+                        </div>
+                        <div class="form-group" id="grp_codigo_autor_cutter">
+                            <label for="codigo_autor_cutter">Cutter-Sanborn <span class="marc-code">(MARC 090b)</span></label>
+                            <input id="codigo_autor_cutter" type="text" placeholder="Ex: C32" oninput="gerarCodigoLivroMascara()">
+                        </div>
+                        <div class="form-group" id="grp_codigo_livro">
+                            <label for="codigo_livro">Número de Chamada Local <span class="marc-code">(MARC 09X)</span></label>
+                            <input id="codigo_livro" type="text" readonly placeholder="Ex: 363.1 C32 2026" style="background:var(--bg-tertiary); font-weight:bold; color:#f59e0b;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1XX - AUTORIA E CONTROLE DE AUTORIDADE -->
+                <div class="marc-section" id="grp_secao_autoria">
+                    <div class="marc-section-title"><i class="fa-solid fa-user-pen"></i> 1XX - Entrada Principal (Controle de Autoridade)</div>
+                    <div class="form-grid">
+                        <div class="form-group full-width" id="grp_nome_pessoal">
+                            <label for="nome_pessoal">Nome Pessoal / Autor Principal <span class="marc-code">(MARC 100)</span></label>
+                            <input id="nome_pessoal" type="text" placeholder="Sobrenome, Nome (Ex: Assumpção, Fabrício)">
+                        </div>
+                        <div class="form-group full-width" id="grp_autor_entidade">
+                            <label for="autor_entidade">Entidade Coletiva / Governo <span class="marc-code">(MARC 110)</span></label>
+                            <input id="autor_entidade" type="text" placeholder="Ex: BRASIL. Ministério da Educação">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2XX - TÍTULO, EDIÇÃO, ESCALA E PUBLICAÇÃO -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-heading"></i> 2XX - Título, Edição e Publicação</div>
+                    <div class="form-grid">
+                        <div class="form-group full-width" id="grp_titulo_principal">
+                            <label for="titulo_principal">Título Principal <span class="marc-code">(MARC 245a)</span></label>
+                            <input id="titulo_principal" required type="text" placeholder="Título da obra ou documento">
+                        </div>
+                        <div class="form-group full-width" id="grp_subtitulo">
+                            <label for="subtitulo">Subtítulo <span class="marc-code">(MARC 245b)</span></label>
+                            <input id="subtitulo" type="text" placeholder="Subtítulo ou complemento do título">
+                        </div>
+                        <div class="form-group full-width" id="grp_responsabilidade">
+                            <label for="responsabilidade">Indicação de Responsabilidade <span class="marc-code">(MARC 245c)</span></label>
+                            <input id="responsabilidade" type="text" placeholder="Ex: organizado por Maria Silva ; ilustrado por João Cruz">
+                        </div>
+                        
+                        <!-- Campo MARC 255 Exclusivo para Mapas -->
+                        <div class="form-group full-width" id="grp_escala_mapa" style="display:none;">
+                            <label for="escala_mapa">Escala e Dados Cartográficos <span class="marc-code">(MARC 255a)</span></label>
+                            <input id="escala_mapa" type="text" placeholder="Ex: Escala 1:50.000 ; Projeção Transversa de Mercator">
+                        </div>
+
+                        <div class="form-group" id="grp_edicao">
+                            <label for="edicao">Edição <span class="marc-code">(MARC 250)</span></label>
+                            <input id="edicao" type="text" placeholder="Ex: 2. ed. rev. e ampl.">
+                        </div>
+                        <div class="form-group" id="grp_local_publicacao">
+                            <label for="local_publicacao">Local de Publicação <span class="marc-code">(MARC 260a / 264a)</span></label>
+                            <input id="local_publicacao" type="text" placeholder="Ex: Belém">
+                        </div>
+                        <div class="form-group" id="grp_editora">
+                            <label for="editora">Editora <span class="marc-code">(MARC 260b / 264b)</span></label>
+                            <input id="editora" type="text" placeholder="Ex: Editora Exemplo">
+                        </div>
+                        <div class="form-group" id="grp_data_publicacao">
+                            <label for="data_publicacao">Ano de Publicação <span class="marc-code">(MARC 260c / 264c)</span></label>
+                            <input id="data_publicacao" type="text" placeholder="Ex: 2026" oninput="gerarCodigoLivroMascara()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3XX / 4XX - DESCRIÇÃO FÍSICA E SÉRIE -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-book-open-reader"></i> 3XX / 4XX - Descrição Física, Periodicidade e Série</div>
+                    <div class="form-grid">
+                        
+                        <!-- Campo MARC 310/362 Exclusivo para Periódicos -->
+                        <div class="form-group" id="grp_periodicidade" style="display:none;">
+                            <label for="periodicidade">Periodicidade <span class="marc-code">(MARC 310)</span></label>
+                            <input id="periodicidade" type="text" placeholder="Ex: Mensal, Anual, Bimensal">
+                        </div>
+                        <div class="form-group" id="grp_numeracao_datas" style="display:none;">
+                            <label for="numeracao_datas">Numeração e Datas <span class="marc-code">(MARC 362)</span></label>
+                            <input id="numeracao_datas" type="text" placeholder="Ex: Vol. 1, n. 1 (jan. 2020)-">
+                        </div>
+
+                        <div class="form-group" id="grp_numero_paginas">
+                            <label for="numero_paginas">Paginação / Duração / Quantidade <span class="marc-code">(MARC 300a)</span></label>
+                            <input id="numero_paginas" type="text" placeholder="Ex: 240 p., 1 disco (120 min), 1 foto">
+                        </div>
+                        <div class="form-group" id="grp_detalhes_fisicos">
+                            <label for="detalhes_fisicos">Outros Detalhes Físicos / Som / Cor <span class="marc-code">(MARC 300b)</span></label>
+                            <input id="detalhes_fisicos" type="text" placeholder="Ex: il. color., som, color.">
+                        </div>
+                        <div class="form-group" id="grp_dimensoes">
+                            <label for="dimensoes">Dimensões / Polegadas <span class="marc-code">(MARC 300c)</span></label>
+                            <input id="dimensoes" type="text" placeholder="Ex: 23 cm, 4 3/4 pol., 10 x 15 cm">
+                        </div>
+                        <div class="form-group full-width" id="grp_descricao_fisica">
+                            <label for="descricao_fisica">Descrição Física Unificada <span class="marc-code">(MARC 300)</span></label>
+                            <input id="descricao_fisica" type="text" placeholder="Ex: 240 p. : il. color. ; 23 cm">
+                        </div>
+                        <div class="form-group full-width" id="grp_indicacao_serie">
+                            <label for="indicacao_serie">Título da Série / Coleção <span class="marc-code">(MARC 490)</span></label>
+                            <input id="indicacao_serie" type="text" placeholder="Ex: Coleção Leitura, v. 3">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5XX - NOTAS (NOTAS TÉCNICAS, DE REQUISITOS, TESE E CONTEÚDO) -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-note-sticky"></i> 5XX - Notas do Registro</div>
+                    <div class="form-grid">
+                        
+                        <!-- Campo MARC 502 Exclusivo para Tese -->
+                        <div class="form-group full-width" id="grp_nota_tese" style="display:none;">
+                            <label for="nota_tese">Nota de Tese / Dissertação <span class="marc-code">(MARC 502)</span></label>
+                            <input id="nota_tese" type="text" placeholder="Ex: Dissertação (Mestrado em Engenharia) - Universidade Federal do Pará, Belém, 2025.">
+                        </div>
+
+                        <!-- Campo MARC 538 Exclusivo para CD/DVD e Mídia -->
+                        <div class="form-group full-width" id="grp_nota_sistema" style="display:none;">
+                            <label for="nota_sistema">Nota de Requisitos do Sistema / Mídia <span class="marc-code">(MARC 538)</span></label>
+                            <input id="nota_sistema" type="text" placeholder="Ex: Requisitos do sistema: DVD player ou drive DVD-ROM; áudio stereo.">
+                        </div>
+
+                        <div class="form-group full-width" id="grp_notas_gerais">
+                            <label for="notas_gerais">Nota Geral <span class="marc-code">(MARC 500)</span></label>
+                            <input id="notas_gerais" type="text" placeholder="Informações relevantes sobre a edição ou artefato">
+                        </div>
+                        <div class="form-group full-width" id="grp_nota_bibliografia">
+                            <label for="nota_bibliografia">Nota de Bibliografia / Índice <span class="marc-code">(MARC 504)</span></label>
+                            <input id="nota_bibliografia" type="text" placeholder="Ex: Inclui bibliografia e índice.">
+                        </div>
+                        <div class="form-group full-width" id="grp_nota_conteudo">
+                            <label for="nota_conteudo">Nota de Conteúdo / Sumário <span class="marc-code">(MARC 505)</span></label>
+                            <textarea id="nota_conteudo" rows="2" placeholder="Capítulos, faixas de áudio ou partes principais"></textarea>
+                        </div>
+                        <div class="form-group full-width" id="grp_notas_resumo">
+                            <label for="notas_resumo">Resumo / Sinopse <span class="marc-code">(MARC 520)</span></label>
+                            <textarea id="notas_resumo" rows="2" placeholder="Resumo do conteúdo"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6XX - ASSUNTOS -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-tags"></i> 6XX - Assuntos e Indexação</div>
+                    <div class="form-grid">
+                        <div class="form-group full-width" id="grp_assunto">
+                            <label for="assunto">Assunto - Tópico Principal <span class="marc-code">(MARC 650)</span></label>
+                            <input id="assunto" type="text" placeholder="Ex: Literatura Brasileira">
+                        </div>
+                        <div class="form-group" id="grp_iniciais_assunto">
+                            <label for="iniciais_assunto">Iniciais do Assunto (Interno)</label>
+                            <input id="iniciais_assunto" type="text" placeholder="Ex: LT">
+                        </div>
+                        <div class="form-group" id="grp_classificacao_geral">
+                            <label for="classificacao_geral">Categoria do Acervo</label>
+                            <select id="classificacao_geral">
+                                <option value="Geral" selected>Geral</option>
+                                <option value="Direito">Direito</option>
+                                <option value="Periódicos">Periódicos</option>
+                                <option value="Teses">Teses/Dissertações</option>
+                                <option value="Multimídia">Multimídia/Cartográfico</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7XX / 8XX - SECUNDÁRIAS E LINKS ELETRÔNICOS -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-link"></i> 7XX / 8XX - Entradas Secundárias (Coautores/Orientadores) e Links</div>
+                    <div class="form-grid">
+                        <div class="form-group full-width" id="grp_entrada_secundaria_pessoal">
+                            <label for="entrada_secundaria_pessoal">Autor Secundário / Orientador / Ilustrador <span class="marc-code">(MARC 700)</span></label>
+                            <input id="entrada_secundaria_pessoal" type="text" placeholder="Ex: Oliveira, Carlos (orient.); Silva, João (il.)">
+                        </div>
+                        <div class="form-group full-width" id="grp_entrada_secundaria_entidade">
+                            <label for="entrada_secundaria_entidade">Entidade Secundária <span class="marc-code">(MARC 710)</span></label>
+                            <input id="entrada_secundaria_entidade" type="text">
+                        </div>
+                        <div class="form-group full-width" id="grp_link_eletronico">
+                            <label for="link_eletronico">Localização e Acesso Eletrônico / PDF / Anexo <span class="marc-code">(MARC 856)</span></label>
+                            <input id="link_eletronico" type="url" placeholder="https://...">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AQUISIÇÃO E INVENTÁRIO LOCAL -->
+                <div class="marc-section">
+                    <div class="marc-section-title"><i class="fa-solid fa-boxes-stacked"></i> Dados de Aquisição e Inventário Local</div>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="exemplares">Nº de Exemplares</label><input id="exemplares" type="number" min="1" value="1"></div>
+                        <div class="form-group"><label for="data_aquisicao">Data de Aquisição</label><input id="data_aquisicao" type="text" placeholder="DD/MM/AAAA" maxlength="10" oninput="formatarDataMascara(this)"></div>
+                        <div class="form-group"><label for="tipo_aquisicao">Modo de Aquisição</label><input id="tipo_aquisicao" type="text" placeholder="Doação / Compra"></div>
+                        <div class="form-group"><label for="preco">Preço / Valor (R$)</label><input id="preco" type="text" placeholder="0,00"></div>
+                        <div class="form-group"><label for="condicao_capa">Estado de Conservação</label>
+                            <select id="condicao_capa">
+                                <option value="Ótimo">Ótimo</option>
+                                <option value="Bom" selected>Bom</option>
+                                <option value="Regular">Regular</option>
+                                <option value="Danificado">Danificado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRUPO DE BOTÕES DE AÇÃO NA CATALOGAÇÃO -->
+                <div class="btn-group" style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-primary" onclick="salvarRegistroAcervo(event)">
+                        <i class="fa-solid fa-floppy-disk"></i> Salvar Novo Registro
+                    </button>
+                    
+                    <button type="button" class="btn btn-success" id="btnAtualizarRegistro" onclick="salvarRegistroAcervo(event, true)" style="display: none; background-color: #10b981; color: #fff;">
+                        <i class="fa-solid fa-arrows-rotate"></i> Atualizar Registro
+                    </button>
+
+                    <button type="button" class="btn btn-blue" onclick="gerarFichaPDF()">
+                        <i class="fa-solid fa-file-pdf"></i> Gerar Ficha CIP / Relatório (PDF)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- 5. ABA DE GESTÃO DE USUÁRIOS -->
+    <section id="tab-usuarios" class="tab-content">
+        <div id="lockUsuarios" class="permission-denied" style="display:none;">
+            <i class="fa-solid fa-user-shield"></i>
+            <h2>Acesso Restrito a Bibliotecários</h2>
+            <p>Apenas a administração possui permissão para gerenciar cadastros de equipe e usuários.</p>
+        </div>
+
+        <div id="contentUsuarios">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title"><i class="fa-solid fa-user-plus"></i> Cadastrar Novo Usuário / Equipe</span>
+                </div>
+
+                <form id="formUsuario" onsubmit="cadastrarUsuario(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="usrNome">Nome Completo</label>
+                            <input type="text" id="usrNome" required placeholder="Ex: Marllon Ferreira Malcher">
+                        </div>
+                        <div class="form-group">
+                            <label for="usrUsuario">Nome de Usuário (Identidade de Login)</label>
+                            <input type="text" id="usrUsuario" required placeholder="Ex: Malcher">
+                        </div>
+                        <div class="form-group">
+                            <label for="usrEmail">E-mail (Login)</label>
+                            <input type="email" id="usrEmail" required placeholder="malo@freechxred.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usrSenha">Senha de Acesso</label>
+                            <input type="password" id="usrSenha" required placeholder="******">
+                        </div>
+                        <div class="form-group">
+                            <label for="usrTelefone">Telefone</label>
+                            <input type="tel" id="usrTelefone" placeholder="(91) 98888-8888">
+                        </div>
+                        <div class="form-group">
+                            <label for="usrCargo">Cargo / Perfil</label>
+                            <select id="usrCargo" required>
+                                <option value="usuario">Usuário (Leitor/Consulta)</option>
+                                <option value="estagiario">Estagiário (Catalogação & Atendimento)</option>
+                                <option value="bibliotecario">Bibliotecário (Administrador Total)</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="usrDepartamento">Departamento / Setor</label>
+                            <input type="text" id="usrDepartamento" placeholder="Ex: Acervo Geral">
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Cadastrar Usuário</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title"><i class="fa-solid fa-users"></i> Usuários Cadastrados</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome Completo</th>
+                                <th>Usuário</th>
+                                <th>E-mail</th>
+                                <th>Telefone</th>
+                                <th>Cargo</th>
+                                <th>Departamento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbUsuarios">
+                            <tr><td colspan="7">Carregando lista de usuários...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. ABA DE LIXEIRA DE LIVROS -->
+    <section id="tab-lixeira" class="tab-content">
+        <div id="lockLixeira" class="permission-denied" style="display:none;">
+            <i class="fa-solid fa-user-shield"></i>
+            <h2>Acesso Restrito a Bibliotecários</h2>
+            <p>Apenas bibliotecários credenciados têm permissão para acessar a lixeira.</p>
+        </div>
+
+        <div id="contentLixeira">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title"><i class="fa-solid fa-trash-can"></i> Lixeira do Acervo</span>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Capa</th>
+                                <th>Tombo</th>
+                                <th>Título</th>
+                                <th>Autor</th>
+                                <th>CDD</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbLixeiraBody">
+                            <tr><td colspan="6" style="text-align:center;">Nenhum livro na lixeira.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- MODAL DE LOGIN -->
+<div class="modal-overlay" id="modalLogin">
+    <div class="modal-box">
+        <span class="close-modal" onclick="fecharModalLogin()">&times;</span>
+        <h3><i class="fa-solid fa-user-lock"></i> Autenticação de Usuário</h3>
+        <p style="color:var(--text-muted); margin-bottom:16px;">Informe suas credenciais para acessar a sua área:</p>
+
+        <form id="formLoginModal" onsubmit="realizarLogin(event)">
+            <div class="form-group" style="margin-bottom:12px;">
+                <label for="loginEmail">E-mail ou Usuário</label>
+                <input type="text" id="loginEmail" required placeholder="Digite seu e-mail de acesso">
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;">
+                <label for="loginSenha">Senha</label>
+                <input type="password" id="loginSenha" required placeholder="Digite sua senha">
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>
+                <button type="button" class="btn btn-outline" onclick="entrarComoVisitante()"><i class="fa-solid fa-user"></i> Continuar como Visitante</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL PREVIEW DA FICHA CIP E RESENHAS -->
+<div class="modal-overlay" id="modalCIP">
+    <div class="modal-box" style="max-width: 650px;">
+        <span class="close-modal" onclick="fecharModalCIP()">&times;</span>
+        <h3><i class="fa-solid fa-book-open"></i> Ficha CIP & Comunidade de Leitores</h3>
+
+        <div class="cip-card" id="areaFichaCIP"></div>
+
+        <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+            <h4 style="font-size: 1rem; color: var(--primary-color); margin-bottom: 10px;">
+                <i class="fa-solid fa-comments"></i> Resenhas e Avaliações dos Leitores
+            </h4>
+
+            <div id="containerResenhasLivro" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;">
+            </div>
+
+            <div id="areaNovaResenha" style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px;">
+                <label style="font-size:0.85rem; font-weight:600;">Escrever uma resenha sobre este livro:</label>
+                <div style="display:flex; gap:10px; margin: 8px 0;">
+                    <select id="resenhaNota" style="width: 120px;">
+                        <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                        <option value="4">⭐⭐⭐⭐ (4)</option>
+                        <option value="3">⭐⭐⭐ (3)</option>
+                        <option value="2">⭐⭐ (2)</option>
+                        <option value="1">⭐ (1)</option>
+                    </select>
+                    <input type="text" id="resenhaTexto" placeholder="Escreva a sua opinião sincera sobre a obra..." style="flex:1;">
+                </div>
+                <button class="btn btn-primary" onclick="publicarResenha()" style="padding: 6px 12px; font-size: 0.8rem; width: 100%;">
+                    <i class="fa-solid fa-paper-plane"></i> Publicar Resenha
+                </button>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-top:20px;">
+            <button class="btn btn-primary" onclick="gerarFichaPDF()"><i class="fa-solid fa-download"></i> Baixar Ficha PDF</button>
+        </div>
+    </div>
+</div>
+
+<footer class="footer-bar">
+    <p>© 2026 • FreechxRed — Desenvolvido por malo. Todos os direitos reservados.</p>
+</footer>
+
+</body>
+</html>

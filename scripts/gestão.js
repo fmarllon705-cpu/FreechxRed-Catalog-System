@@ -1,6 +1,8 @@
 // ==========================================
-// 7. GESTÃO DE USUÁRIOS
+// 7. GESTÃO DE USUÁRIOS (COM SUPORTE A EDIÇÃO)
 // ==========================================
+
+let usuarioEditandoId = null;
 
 async function carregarUsuarios() {
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
@@ -20,7 +22,7 @@ function renderizarTabelaUsuarios() {
     tbody.innerHTML = '';
 
     if (!Array.isArray(listaUsuarios) || listaUsuarios.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Nenhum usuário cadastrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhum usuário cadastrado.</td></tr>`;
         return;
     }
 
@@ -31,10 +33,9 @@ function renderizarTabelaUsuarios() {
             <td><strong>${u.nome || '-'}</strong></td>
             <td>${u.usuario || '-'}</td>
             <td>${u.email || '-'}</td>
-            <td>${u.telefone || '-'}</td>
             <td><span class="role-badge role-${cargoLower}">${cargoLower.toUpperCase()}</span></td>
-            <td>${u.departamento || '-'}</td>
             <td>
+                <button class="btn btn-primary" style="padding:2px 6px; font-size:0.75rem; margin-right:4px;" onclick="editarUsuario(${u.id})"><i class="fa-solid fa-pen-to-square"></i> Editar</button>
                 <button class="btn btn-danger" style="padding:2px 6px; font-size:0.75rem;" onclick="excluirUsuario(${u.id})"><i class="fa-solid fa-user-minus"></i> Excluir</button>
             </td>
         `;
@@ -42,30 +43,99 @@ function renderizarTabelaUsuarios() {
     });
 }
 
+function editarUsuario(id) {
+    const usuario = listaUsuarios.find(u => Number(u.id) === Number(id));
+    if (!usuario) {
+        alert('Usuário não encontrado.');
+        return;
+    }
+
+    usuarioEditandoId = usuario.id;
+
+    const inputNome = document.getElementById('usrNome');
+    const inputUsuario = document.getElementById('usrUsuario');
+    const inputEmail = document.getElementById('usrEmail');
+    const inputSenha = document.getElementById('usrSenha');
+    const selectCargo = document.getElementById('usrCargo');
+    
+    if (inputNome) inputNome.value = usuario.nome || '';
+    if (inputUsuario) inputUsuario.value = usuario.usuario || '';
+    if (inputEmail) inputEmail.value = usuario.email || '';
+    if (inputSenha) inputSenha.value = usuario.senha || '';
+    if (selectCargo) selectCargo.value = usuario.cargo || 'usuario';
+
+    // Atualizar título do card e texto do botão
+    const cardTitle = document.getElementById('tituloFormUsuario');
+    if (cardTitle) cardTitle.innerHTML = `<i class="fa-solid fa-user-pen"></i> Editar Usuário / Equipe (ID: ${usuario.id})`;
+
+    const btnSubmit = document.getElementById('btnSubmitUsuario');
+    if (btnSubmit) btnSubmit.innerHTML = `<i class="fa-solid fa-check"></i> Salvar Alterações`;
+
+    // Exibir botão de cancelar edição se existir
+    const btnCancelar = document.getElementById('btnCancelarEdicaoUsuario');
+    if (btnCancelar) btnCancelar.style.display = 'inline-block';
+
+    // Rolar até o formulário
+    const formCard = document.getElementById('formUsuario');
+    if (formCard) formCard.scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelarEdicaoUsuario() {
+    usuarioEditandoId = null;
+    const form = document.getElementById('formUsuario');
+    if (form) form.reset();
+
+    const cardTitle = document.getElementById('tituloFormUsuario');
+    if (cardTitle) cardTitle.innerHTML = `<i class="fa-solid fa-user-plus"></i> Cadastrar Novo Usuário / Equipe`;
+
+    const btnSubmit = document.getElementById('btnSubmitUsuario');
+    if (btnSubmit) btnSubmit.innerHTML = `<i class="fa-solid fa-check"></i> Cadastrar Usuário`;
+
+    const btnCancelar = document.getElementById('btnCancelarEdicaoUsuario');
+    if (btnCancelar) btnCancelar.style.display = 'none';
+}
+
 async function cadastrarUsuario(e) {
     if (e) e.preventDefault();
 
-    const novoUsuario = {
+    const dadosUsuario = {
         nome: document.getElementById('usrNome')?.value.trim() || '',
         usuario: document.getElementById('usrUsuario')?.value.trim() || '',
         email: document.getElementById('usrEmail')?.value.trim() || '',
         senha: document.getElementById('usrSenha')?.value.trim() || '',
-        telefone: document.getElementById('usrTelefone')?.value.trim() || '',
-        cargo: document.getElementById('usrCargo')?.value || 'usuario',
-        departamento: document.getElementById('usrDepartamento')?.value.trim() || ''
+        cargo: document.getElementById('usrCargo')?.value || 'usuario'
     };
 
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        const { error } = await supabaseClient.from('usuarios_sistema').insert([novoUsuario]);
-        if (error) {
-            alert('Erro ao cadastrar usuário no Supabase: ' + error.message);
-            return;
+        if (usuarioEditandoId) {
+            // Modo de Edição (UPDATE)
+            const { error } = await supabaseClient
+                .from('usuarios_sistema')
+                .update(dadosUsuario)
+                .eq('id', usuarioEditandoId);
+
+            if (error) {
+                alert('Erro ao atualizar usuário no Supabase: ' + error.message);
+                return;
+            }
+            alert('Usuário atualizado com sucesso!');
+        } else {
+            // Modo de Cadastro (INSERT)
+            const { error } = await supabaseClient
+                .from('usuarios_sistema')
+                .insert([dadosUsuario]);
+
+            if (error) {
+                alert('Erro ao cadastrar usuário no Supabase: ' + error.message);
+                return;
+            }
+            alert('Usuário cadastrado com sucesso!');
         }
+    } else {
+        alert('Modo de demonstração local executado.');
     }
 
-    alert('Usuário cadastrado com sucesso!');
-    const form = document.getElementById('formUsuario');
-    if (form) form.reset();
+    cancelarEdicaoUsuario();
     carregarUsuarios();
 }
 
@@ -75,6 +145,9 @@ async function excluirUsuario(id) {
             await supabaseClient.from('usuarios_sistema').delete().eq('id', id);
         }
         alert('Usuário removido.');
+        if (usuarioEditandoId === id) {
+            cancelarEdicaoUsuario();
+        }
         carregarUsuarios();
     }
 }
@@ -488,4 +561,50 @@ async function rejeitarResenha(id) {
     }
     await carregarResenhas();
     alert('Resenha rejeitada.');
+}
+
+function abrirModalPreCadastro() {
+    const modalLogin = document.getElementById('modalLogin');
+    const modalPre = document.getElementById('modalPreCadastro');
+    if (modalLogin) modalLogin.style.display = 'none';
+    if (modalPre) modalPre.style.display = 'flex';
+}
+
+function fecharModalPreCadastro() {
+    const modalPre = document.getElementById('modalPreCadastro');
+    if (modalPre) modalPre.style.display = 'none';
+}
+
+async function realizarPreCadastro(event) {
+    event.preventDefault();
+    
+    const nome = document.getElementById('preNome').value.trim();
+    const usuario = document.getElementById('preUsuario').value.trim();
+    const email = document.getElementById('preEmail').value.trim();
+    const senha = document.getElementById('preSenha').value.trim();
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('usuarios_sistema') 
+            .insert([{
+                nome: nome,
+                usuario: usuario,
+                email: email,
+                senha: senha,
+                cargo: 'usuario',
+                presencial_validado: false
+            }]);
+
+        if (error) throw error;
+
+        alert('Pré-registo efetuado com sucesso! Já pode aceder aos conteúdos online. Para empréstimos físicos, dirija-se à biblioteca para validar o seu cadastro.');
+        fecharModalPreCadastro();
+        
+        if (typeof carregarUsuarios === 'function') carregarUsuarios();
+        abrirModalLogin();
+
+    } catch (error) {
+        console.error('Erro detalhado do Supabase:', error);
+        alert('Erro ao realizar o pré-registo: ' + (error.message || 'O e-mail ou utilizador podem já existir.'));
+    }
 }

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lixeira • FreechxRed</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="scripts/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="scripts/script.js" defer></script>
+    <script src="scripts/registros.js" defer></script>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="logo-box">
+            <div>
+                <h1>FreechxRed</h1>
+                <h3>Lixeira e Descarte de Livros</h3>
+            </div>
+        </div>
+    </div>
+</header>
+
+<nav class="main-nav">
+    <div class="nav-container">
+        <a href="index.html" class="nav-tab active"><i class="fa-solid fa-house"></i> Home / Consulta</a>
+        <a href="minha-area.html" class="nav-tab" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
+        <a href="circulacao.html" class="nav-tab" id="tabNavCirculacao" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Circulação</a>
+        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-file-pen"></i> Catalogação</a>
+        <a href="suporte.html" class="nav-tab"><i class="fa-solid fa-headset"></i> Suporte</a>
+        <a href="usuarios.html" class="nav-tab" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-users-gear"></i> Gestão de Usuários</a>
+        <a href="lixeira.html" class="nav-tab" id="tabNavLixeira" style="display: none;"><i class="fa-solid fa-trash-can"></i> Lixeira</a>
+    </div>
+</nav>
+
+<main class="container">
+    <div id="contentLixeira">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-trash-can"></i> Lixeira do Acervo</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Capa</th>
+                            <th>Tombo</th>
+                            <th>Título</th>
+                            <th>Autor</th>
+                            <th>CDD</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbLixeiraBody">
+                        <tr><td colspan="6" style="text-align:center;">Nenhum livro na lixeira.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

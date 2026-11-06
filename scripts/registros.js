@@ -2,13 +2,11 @@
 // GERADOR DE PDF (LAYOUT IDÊNTICO AO PLANILHAS.JS)
 // ==========================================
 async function gerarFichaPDF() {
-    // 1. Coleta dados do formulário ou do livro selecionado no Modal CIP
     let dados = {};
 
-    if (livroCIPSelecionado && document.getElementById('modalCIP') && document.getElementById('modalCIP').classList.contains('active')) {
+    if (typeof livroCIPSelecionado !== 'undefined' && livroCIPSelecionado && document.getElementById('modalCIP') && document.getElementById('modalCIP').classList.contains('active')) {
         dados = { ...livroCIPSelecionado };
     } else {
-        // Coleta diretamente dos inputs da página
         const getValue = (id) => {
             const el = document.getElementById(id);
             return el ? el.value.trim() : "";
@@ -58,7 +56,6 @@ async function gerarFichaPDF() {
     const { jsPDF } = window.jspdf || window.web_jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
 
-    // Funções auxiliares de desenho idênticas ao planilhas.js
     function drawField(doc, label, value, x, y, maxWidth = null) {
         if (!value) return 0;
         const lineHeight = 6;
@@ -104,7 +101,6 @@ async function gerarFichaPDF() {
         return drawField(doc, label, value, x, y, maxWidth);
     }
 
-    // Processamento da Descrição Física
     let descFisica = dados.descricao_fisica || '';
     if (!descFisica) {
         const pag = dados.numero_paginas ? `${dados.numero_paginas} p.` : '';
@@ -113,7 +109,6 @@ async function gerarFichaPDF() {
         descFisica = `${pag}${det}${dim}`.trim();
     }
 
-    // Tentar carregar imagem de fundo (se houver input de ficheiro de imagem)
     const fileInput = document.getElementById('capa_file') || document.getElementById('imageInput');
     if (fileInput && fileInput.files && fileInput.files[0]) {
         try {
@@ -134,7 +129,6 @@ async function gerarFichaPDF() {
     let lineSpacing = 6;
     let h = 0;
 
-    // --- LINHA 1 ---
     h = Math.max(
         drawIfExists(doc, "Data: ", dados.data_reg, 10, y, 58),
         drawIfExists(doc, "Catalogador: ", dados.catalogador, 62, y, 72),
@@ -142,18 +136,15 @@ async function gerarFichaPDF() {
     );
     if (h > 0) y += (h * lineSpacing) + 2;
 
-    // --- ISBN / ISSN ---
     h = Math.max(
         drawIfExists(doc, "(020) ISBN: ", dados.isbn, 10, y, 95),
         drawIfExists(doc, "ISSN: ", dados.issn, 105, y, 95)
     );
     if (h > 0) y += (h * lineSpacing) + 2;
 
-    // --- IDIOMA ---
     let hLang = drawIfExists(doc, "(041) Código do Idioma: ", dados.codigo_idioma, 10, y, 185);
     if (hLang > 0) y += 8;
 
-    // --- CLASSIFICAÇÃO / CUTTER / EDIÇÃO ---
     const classif = dados.classificacao_cdd || '';
     h = Math.max(
         drawIfExists(doc, "(090) Classificação: ", classif, 10, y, 68),
@@ -162,7 +153,6 @@ async function gerarFichaPDF() {
     );
     if (h > 0) y += (h * lineSpacing) + 2;
 
-    // --- BLOCO 1 ---
     const bloco1 = [
         ["(100) Nome Pessoal: ", dados.nome_pessoal],
         ["(110) Autor Entidade: ", dados.autor_entidade],
@@ -178,21 +168,18 @@ async function gerarFichaPDF() {
         }
     });
 
-    // --- EDIÇÃO / LOCAL ---
     h = Math.max(
         drawIfExists(doc, "(250) Indicação da edição: ", dados.edicao, 10, y, 95),
         drawIfExists(doc, "(260) Local de publicação: ", dados.local_publicacao, 105, y, 95)
     );
     if (h > 0) y += (h * lineSpacing) + 2;
 
-    // --- EDITORA / DATA PUBLICAÇÃO ---
     h = Math.max(
         drawIfExists(doc, "Nome do Editor: ", dados.editora, 10, y, 95),
         drawIfExists(doc, "Data de Publicação: ", dados.data_publicacao, 105, y, 95)
     );
     if (h > 0) y += (h * lineSpacing) + 2;
 
-    // --- BLOCO 2 ---
     const bloco2 = [
         ["(300) Descrição Física: ", descFisica],
         ["(490) Indicação da Série: ", dados.indicacao_serie],
@@ -210,28 +197,21 @@ async function gerarFichaPDF() {
         }
     });
 
-    // --- AQUISIÇÃO ---
     h = Math.max(
         drawIfExists(doc, "Data de Aquisição: ", dados.data_aquisicao, 10, y, 95),
         drawIfExists(doc, "Tipo de Aquisição: ", dados.tipo_aquisicao, 105, y, 95)
     );
     if (h > 0) y += (h * lineSpacing) + 2;
 
-
-    // ==========================================
-    // FICHA CATALOGRÁFICA PADRÃO CIP (RODAPÉ ESQUERDO)
-    // ==========================================
     const footerX = 10;
     const footerY = 245;
     const molduraLargura = 100;
     const molduraAltura = 45;
 
-    // Moldura principal da CIP
     doc.setDrawColor(0);
     doc.setLineWidth(0.2);
     doc.rect(footerX, footerY, molduraLargura, molduraAltura);
 
-    // Título centralizado no topo do quadro CIP
     doc.setFont("times", "normal");
     doc.setFontSize(7);
     doc.text(
@@ -241,7 +221,6 @@ async function gerarFichaPDF() {
         { align: "center" }
     );
 
-    // Código do Autor (Cutter) à esquerda
     doc.setFontSize(8);
     doc.text(
         dados.codigo_autor_cutter || "",
@@ -249,7 +228,6 @@ async function gerarFichaPDF() {
         footerY + 12
     );
 
-    // Formatação do conteúdo CIP
     const autorCIP = dados.nome_pessoal || dados.autor_entidade || "";
     const responsabilidadeCIP = dados.responsabilidade || autorCIP || "";
     const tituloCompleto = `${dados.titulo_principal || ""}${dados.subtitulo ? ": " + dados.subtitulo : ""}`;
@@ -289,7 +267,6 @@ async function gerarFichaPDF() {
 
     doc.text(linha4Split, footerX + 16, footerY + 38);
 
-    // Classificação CDD no canto inferior direito do quadro
     doc.setFont("times", "normal");
     doc.setFontSize(8);
     doc.text(
@@ -299,32 +276,24 @@ async function gerarFichaPDF() {
         { align: "right" }
     );
 
-    // ==========================================
-    // REFERÊNCIA ABNT (RODAPÉ DIREITO)
-    // ==========================================
     const refX = 120;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.text("REFERÊNCIA (ABNT):", refX, footerY + 4);
     doc.setFont("helvetica", "normal");
 
-    // Gerar string ABNT adaptada
     const refText = gerarReferenciaABNT(dados);
     const splitRef = doc.splitTextToSize(refText, 80);
     doc.text(splitRef, refX, footerY + 10);
 
-    // Salvar o ficheiro com o código do autor e título
     let nomeArquivo = `${dados.codigo_autor_cutter || "sem_codigo"} - ${dados.titulo_principal || "sem_titulo"}`;
     nomeArquivo = nomeArquivo.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
 
     doc.save(nomeArquivo + ".pdf");
 }
 
-// ==========================================
-// FUNÇÃO DE SALVAMENTO NO SUPABASE
-// ==========================================
-async function salvarRegistroAcervo(e) {
-    if (e) e.preventDefault();
+async function salvarRegistroAcervo(event, isAtualizacao = false) {
+    if (event) event.preventDefault();
 
     const getValue = (id) => {
         const el = document.getElementById(id);
@@ -339,7 +308,7 @@ async function salvarRegistroAcervo(e) {
         return isNaN(parsed) ? null : parsed;
     };
 
-    // Tenta pegar o título pelo ID padrão ou alternativos comuns
+    const idExistente = getValue('livro_id');
     const tituloPrincipal = getValue('titulo_principal') || getValue('tituloPrincipal') || getValue('txtTitulo');
     
     if (!tituloPrincipal) {
@@ -349,14 +318,22 @@ async function salvarRegistroAcervo(e) {
         return;
     }
 
+    let tomboFinal = getValue('numero_tombo');
+    if (!tomboFinal) {
+        const anoAtual = new Date().getFullYear();
+        let count = (Array.isArray(acervoCompleto) ? acervoCompleto.filter(l => !l.em_lixeira).length : 0) + 1;
+        tomboFinal = `${String(count).padStart(7, '0')}; ${anoAtual}.${count}`;
+    }
+
     const novoRegistro = {
         capa_url: getValue('capa_url'),
-        numero_tombo: getValue('numero_tombo'),
+        numero_tombo: tomboFinal,
         data_reg: getValue('data_reg') || new Date().toISOString().split('T')[0],
         catalogador: getValue('catalogador'),
         tipo_material: getValue('tipo_material') || 'Livros',
         isbn: getValue('isbn'),
         issn: getValue('issn'),
+        fonte_catalogacao: getValue('fonte_catalogacao'),
         codigo_idioma: getValue('codigo_idioma') || 'po',
         classificacao_cdd: getValue('classificacao_cdd'),
         codigo_autor_cutter: getValue('codigo_autor_cutter'),
@@ -377,46 +354,49 @@ async function salvarRegistroAcervo(e) {
         dimensoes: getValue('dimensoes'),
         indicacao_serie: getValue('indicacao_serie'),
         notas_gerais: getValue('notas_gerais'),
+        nota_bibliografia: getValue('nota_bibliografia'),
+        nota_conteudo: getValue('nota_conteudo'),
         nota_tese: getValue('nota_tese'),
         notas_resumo: getValue('notas_resumo'),
         assunto: getValue('assunto'),
+        iniciais_assunto: getValue('iniciais_assunto'),
+        classificacao_geral: getValue('classificacao_geral') || 'Geral',
+        entrada_secundaria_pessoal: getValue('entrada_secundaria_pessoal'),
+        entrada_secundaria_entidade: getValue('entrada_secundaria_entidade'),
+        link_eletronico: getValue('link_eletronico'),
         exemplares: getIntOrNull('exemplares') || 1,
         data_aquisicao: getValue('data_aquisicao'),
         tipo_aquisicao: getValue('tipo_aquisicao'),
-        em_lixeira: false
+        preco: getValue('preco'),
+        condicao_capa: getValue('condicao_capa') || 'Bom',
+        em_lixeira: false,
+        updated_at: new Date().toISOString()
     };
+
+    if (idExistente) {
+        novoRegistro.id = Number(idExistente);
+    }
 
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
             let resultado;
-            if (idLivroEdicao) {
-                // Atualiza registro existente
+            if (idExistente) {
                 resultado = await supabaseClient
                     .from('acervo')
                     .update(novoRegistro)
-                    .eq('id', idLivroEdicao);
-                
-                idLivroEdicao = null; // Reseta ID de edição
+                    .eq('id', idExistente);
                 alert("Registro atualizado com sucesso!");
             } else {
-                // Insere novo registro
                 resultado = await supabaseClient
                     .from('acervo')
                     .insert([novoRegistro]);
-                
                 alert("Registro salvo no acervo com sucesso!");
             }
 
             if (resultado.error) throw resultado.error;
 
-            const form = document.getElementById('formCadastroAcervo') || document.getElementById('formRegistro');
-            if (form) form.reset();
-
-            // Restaura botão salvar
-            const btnSalvar = form ? form.querySelector('button[type="submit"]') : null;
-            if (btnSalvar) btnSalvar.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar Registro';
-
-            if (typeof carregarAcervo === 'function') carregarAcervo();
+            limparFormulario();
+            if (typeof carregarAcervo === 'function') await carregarAcervo();
         } catch (err) {
             console.error("Erro ao salvar/atualizar no Supabase:", err);
             alert("Erro do Banco de Dados: " + err.message);
@@ -424,9 +404,6 @@ async function salvarRegistroAcervo(e) {
     }
 }
 
-// ==========================================
-// MÁSCARAS E MUDANÇAS DINÂMICAS DE FORMULÁRIO
-// ==========================================
 function carregarCapaJPEG(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -488,7 +465,6 @@ function removerCapaJPEG() {
     if (previewContainer) previewContainer.style.display = 'none';
 }
 
-// MÁSCARA AUTOMÁTICA DE DATA (DD/MM/AAAA)
 function formatarDataMascara(input) {
     let v = input.value.replace(/\D/g, "");
     if (v.length > 8) v = v.substring(0, 8);
@@ -502,45 +478,40 @@ function formatarDataMascara(input) {
     }
 }
 
-// Função para atualizar o Número de Chamada Local em tempo real
-function atualizarNumeroChamada() {
+function gerarCodigoLivroMascara() {
     const cdd = document.getElementById('classificacao_cdd')?.value.trim() || '';
     const cutter = document.getElementById('codigo_autor_cutter')?.value.trim() || '';
-    const edicao = document.getElementById('edicao')?.value.trim() || '';
+    const ano = document.getElementById('data_publicacao')?.value.trim() || '';
 
-    const partes = [cdd, cutter, edicao].filter(Boolean);
+    const partes = [cdd, cutter, ano].filter(Boolean);
     const numeroChamada = partes.join(' ');
 
-    const inputChamada = document.getElementById('numero_chamada_local') || document.getElementById('codigo_livro');
+    const inputChamada = document.getElementById('codigo_livro') || document.getElementById('numero_chamada_local');
     if (inputChamada) {
         inputChamada.value = numeroChamada;
     }
 }
 
-// Event Listeners para atualizar automaticamente ao digitar
 document.addEventListener('DOMContentLoaded', () => {
     const camposParaMonitorar = [
         'classificacao_cdd',
         'codigo_autor_cutter',
-        'edicao'
+        'data_publicacao'
     ];
 
     camposParaMonitorar.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.addEventListener('input', atualizarNumeroChamada);
+            el.addEventListener('input', gerarCodigoLivroMascara);
         }
     });
 
-    const formAcervo = document.getElementById('formCadastroAcervo') || document.getElementById('formRegistro');
-    if (formAcervo) {
-        formAcervo.addEventListener('submit', salvarRegistroAcervo);
+    const formAcervo = document.getElementById('formMARC') || document.getElementById('formCadastroAcervo');
+    if (formAcervo && !formAcervo.dataset.listenerAttached) {
+        formAcervo.dataset.listenerAttached = "true";
+        formAcervo.addEventListener('submit', (e) => salvarRegistroAcervo(e));
     }
 });
-
-// ==========================================
-// MUDANÇAS DINÂMICAS DE FORMULÁRIO (AACR2 / MARC21)
-// ==========================================
 
 function alternarCamposPorTipoMaterial() {
     const tipoElem = document.getElementById('tipo_material');
@@ -577,7 +548,6 @@ function alternarCamposPorTipoMaterial() {
     switch (tipo) {
         case 'Livros':
             break;
-
         case 'Periodicos':
             oculta(grpIsbn);
             exibe(grpIssn);
@@ -585,38 +555,32 @@ function alternarCamposPorTipoMaterial() {
             exibe(grpNumeracaoDatas);
             oculta(grpEdicao);
             break;
-
         case 'Tese':
             exibe(grpIsbn);
             exibe(grpNotaTese);
             oculta(grpIndicacaoSerie);
             break;
-
         case 'Cd/DVD':
             oculta(grpIssn);
             exibe(grpNotaSistema);
             oculta(grpIndicacaoSerie);
             break;
-
         case 'Foto':
             oculta(grpIsbn);
             oculta(grpIssn);
             oculta(grpEdicao);
             oculta(grpIndicacaoSerie);
             break;
-
         case 'Panfleto':
             exibe(grpIsbn);
             oculta(grpIndicacaoSerie);
             break;
-
         case 'Mapa':
             oculta(grpIsbn);
             oculta(grpIssn);
             exibe(grpEscalaMapa);
             oculta(grpEdicao);
             break;
-
         case 'Objeto 3D':
             oculta(grpIsbn);
             oculta(grpIssn);
@@ -624,32 +588,35 @@ function alternarCamposPorTipoMaterial() {
             oculta(grpIndicacaoSerie);
             oculta(grpNotaBibliografia);
             break;
-
         default:
             break;
     }
 }
 
 function atribuirProximoTombo() {
-    let maxTombo = 0;
+    const dataAtual = new Date();
+    const anoAtual = dataAtual.getFullYear();
+    let contadorAno = 1;
+
     if (typeof acervoCompleto !== 'undefined' && Array.isArray(acervoCompleto)) {
-        acervoCompleto.forEach(l => {
-            const tomboNum = parseInt(l.numero_tombo || l.tombo || 0, 10);
-            if (!isNaN(tomboNum) && tomboNum > maxTombo) {
-                maxTombo = tomboNum;
-            }
+        const registrosAno = acervoCompleto.filter(l => {
+            if (l.em_lixeira) return false;
+            const dataReg = l.data_reg || '';
+            return dataReg.includes(String(anoAtual));
         });
+        contadorAno = registrosAno.length + 1;
     }
-    const proximoTombo = String(maxTombo + 1).padStart(5, '0');
+
+    const sequencialStr = String(contadorAno).padStart(7, '0');
+    const estatisticaStr = `${anoAtual}.${contadorAno}`;
+    const tomboDuploFormatado = `${sequencialStr}; ${estatisticaStr}`;
+
     const inputTombo = document.getElementById('numero_tombo');
-    if (inputTombo && !inputTombo.value) {
-        inputTombo.value = proximoTombo;
+    if (inputTombo) {
+        inputTombo.value = tomboDuploFormatado;
     }
 }
 
-// =========================================================================
-// FUNÇÃO AUXILIAR: GERAÇÃO DA REFERÊNCIA ABNT DENSAMENTE ADAPTADA (NBR 6023)
-// =========================================================================
 function gerarReferenciaABNT(dados) {
     const autor = (dados.nome_pessoal || dados.autor_entidade || '').trim();
     let autorFormatado = autor;
@@ -694,9 +661,6 @@ function gerarReferenciaABNT(dados) {
     }
 }
 
-// ==========================================
-// 11. FICHA CATALOGRÁFICA (CIP) & LIXEIRA
-// ==========================================
 function verCIP(id) {
     if (typeof acervoCompleto === 'undefined' || !Array.isArray(acervoCompleto)) return;
     const livro = acervoCompleto.find(l => l.id == id);
@@ -820,31 +784,34 @@ async function excluirDefinitivamenteDaLixeira(id) {
     }
 }
 
-// VARIÁVEL GLOBAL PARA MODO DE EDIÇÃO
-let idLivroEdicao = null;
-
-// ========================================================
-// CARREGAR DADOS DO LIVRO NO FORMULÁRIO DE EDIÇÃO
-// ========================================================
 function editarLivro(id) {
+    // Se o formulário não estiver na página atual, redireciona para catalogacao.html com o ID na URL
+    const formCatalogacao = document.getElementById('formMARC') || document.getElementById('formCadastroAcervo');
+    if (!formCatalogacao) {
+        window.location.href = `catalogacao.html?editar=${id}`;
+        return;
+    }
+
+    // Caso já esteja na página de catalogação, preenche o formulário diretamente
     const livro = acervoCompleto.find(item => Number(item.id) === Number(id));
     if (!livro) {
         alert("Registro não encontrado no acervo!");
         return;
     }
 
-    // Preenche o ID oculto para indicar modo de edição
     document.getElementById('livro_id').value = livro.id || '';
 
-    // Mapeamento dos campos do Supabase para o formulário
     document.getElementById('capa_url').value = livro.capa_url || '';
     if (livro.capa_url) {
-        document.getElementById('imgPreviewCapa').src = livro.capa_url;
-        document.getElementById('previewCapaContainer').style.display = 'flex';
+        const imgPrev = document.getElementById('imgPreviewCapa');
+        const prevContainer = document.getElementById('previewCapaContainer');
+        if (imgPrev) imgPrev.src = livro.capa_url;
+        if (prevContainer) prevContainer.style.display = 'flex';
     } else {
         removerCapaJPEG();
     }
 
+    // Preenchimento dos campos MARC21
     document.getElementById('numero_tombo').value = livro.numero_tombo || '';
     document.getElementById('data_reg').value = livro.data_reg || '';
     document.getElementById('catalogador').value = livro.catalogador || '';
@@ -857,7 +824,8 @@ function editarLivro(id) {
 
     document.getElementById('classificacao_cdd').value = livro.classificacao_cdd || '';
     document.getElementById('codigo_autor_cutter').value = livro.codigo_autor_cutter || '';
-    document.getElementById('codigo_livro').value = livro.codigo_livro || '';
+    const inputChamada = document.getElementById('codigo_livro') || document.getElementById('numero_chamada_local');
+    if (inputChamada) inputChamada.value = livro.codigo_livro || livro.numero_chamada_local || '';
 
     document.getElementById('nome_pessoal').value = livro.nome_pessoal || '';
     document.getElementById('autor_entidade').value = livro.autor_entidade || '';
@@ -895,27 +863,25 @@ function editarLivro(id) {
     document.getElementById('preco').value = livro.preco || '';
     document.getElementById('condicao_capa').value = livro.condicao_capa || 'Bom';
 
-    // Ajusta visualização de tipos específicos de material
-    alternarCamposPorTipoMaterial();
+    if (typeof alternarCamposPorTipoMaterial === 'function') alternarCamposPorTipoMaterial();
 
-    // Exibe o botão "Atualizar Registro"
     const btnAtualizar = document.getElementById('btnAtualizarRegistro');
     if (btnAtualizar) btnAtualizar.style.display = 'inline-block';
 
-    // Alterna para a aba de catalogação e rola até o topo
-    trocarAba('catalogacao');
+    if (typeof trocarAba === 'function') {
+        trocarAba('catalogacao');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ========================================================
-// LIMPAR FORMULÁRIO E RESETAR BOTÕES DE AÇÃO
-// ========================================================
 function limparFormulario() {
     const form = document.getElementById('formMARC');
     if (form) form.reset();
 
-    document.getElementById('livro_id').value = '';
-    document.getElementById('capa_url').value = '';
+    const lvId = document.getElementById('livro_id');
+    const cpUrl = document.getElementById('capa_url');
+    if (lvId) lvId.value = '';
+    if (cpUrl) cpUrl.value = '';
 
     const preview = document.getElementById('previewCapaContainer');
     if (preview) preview.style.display = 'none';
@@ -926,130 +892,15 @@ function limparFormulario() {
     alternarCamposPorTipoMaterial();
 }
 
-// ========================================================
-// SALVAR OU ATUALIZAR REGISTRO NO SUPABASE
-// ========================================================
-async function salvarRegistroAcervo(event, isAtualizacao = false) {
-    if (event) event.preventDefault();
-
-    const getValue = (id) => {
-        const el = document.getElementById(id);
-        return el ? el.value.trim() : "";
-    };
-
-    const idExistente = getValue('livro_id');
-    const tituloPrincipal = getValue('titulo_principal');
-
-    if (!tituloPrincipal) {
-        alert("Por favor, preencha o Título Principal da obra.");
-        return;
-    }
-
-    // Objeto estruturado com todos os campos para tabela "acervo" / "livros"
-    const dadosLivro = {
-        capa_url: getValue('capa_url'),
-        numero_tombo: getValue('numero_tombo') || `TMB-${Date.now()}`,
-        data_reg: getValue('data_reg') || new Date().toLocaleDateString('pt-BR'),
-        catalogador: getValue('catalogador'),
-        tipo_material: getValue('tipo_material'),
-        isbn: getValue('isbn'),
-        issn: getValue('issn'),
-        fonte_catalogacao: getValue('fonte_catalogacao'),
-        codigo_idioma: getValue('codigo_idioma'),
-        classificacao_cdd: getValue('classificacao_cdd'),
-        codigo_autor_cutter: getValue('codigo_autor_cutter'),
-        codigo_livro: getValue('codigo_livro'),
-        nome_pessoal: getValue('nome_pessoal'),
-        autor_entidade: getValue('autor_entidade'),
-        titulo_principal: tituloPrincipal,
-        subtitulo: getValue('subtitulo'),
-        responsabilidade: getValue('responsabilidade'),
-        edicao: getValue('edicao'),
-        local_publicacao: getValue('local_publicacao'),
-        editora: getValue('editora'),
-        data_publicacao: getValue('data_publicacao'),
-        numero_paginas: getValue('numero_paginas'),
-        detalhes_fisicos: getValue('detalhes_fisicos'),
-        dimensoes: getValue('dimensoes'),
-        descricao_fisica: getValue('descricao_fisica'),
-        indicacao_serie: getValue('indicacao_serie'),
-        notas_gerais: getValue('notas_gerais'),
-        nota_bibliografia: getValue('nota_bibliografia'),
-        nota_conteudo: getValue('nota_conteudo'),
-        notas_resumo: getValue('notas_resumo'),
-        assunto: getValue('assunto'),
-        iniciais_assunto: getValue('iniciais_assunto'),
-        classificacao_geral: getValue('classificacao_geral'),
-        entrada_secundaria_pessoal: getValue('entrada_secundaria_pessoal'),
-        entrada_secundaria_entidade: getValue('entrada_secundaria_entidade'),
-        link_eletronico: getValue('link_eletronico'),
-        exemplares: parseInt(getValue('exemplares'), 10) || 1,
-        data_aquisicao: getValue('data_aquisicao'),
-        tipo_aquisicao: getValue('tipo_aquisicao'),
-        preco: getValue('preco'),
-        condicao_capa: getValue('condicao_capa'),
-        updated_at: new Date().toISOString()
-    };
-
-    if (idExistente) {
-        dadosLivro.id = Number(idExistente);
-    }
-
-    try {
-        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-            let resposta;
-
-            if (idExistente) {
-                // Atualização de registro existente no Supabase
-                resposta = await supabaseClient
-                    .from('acervo')
-                    .update(dadosLivro)
-                    .eq('id', idExistente)
-                    .select();
-            } else {
-                // Inserção de novo registro no Supabase
-                resposta = await supabaseClient
-                    .from('acervo')
-                    .insert([dadosLivro])
-                    .select();
-            }
-
-            if (resposta.error) {
-                throw resposta.error;
-            }
-
-            alert(idExistente ? "Registro atualizado no Supabase com sucesso!" : "Novo registro salvo com sucesso no Supabase!");
-        } else {
-            alert("Aviso: Conexão com Supabase indisponível no momento.");
-        }
-
-        limparFormulario();
-        if (typeof carregarAcervo === 'function') {
-            await carregarAcervo();
-        }
-    } catch (err) {
-        console.error("Erro ao persistir no Supabase:", err);
-        alert("Erro ao salvar no banco de dados: " + (err.message || 'Falha na requisição'));
-    }
-}
-
-// ==========================================
-// PREENCHIMENTO AUTOMÁTICO DE CATALOGAÇÃO VIA ISBN
-// ==========================================
-
 async function buscarDadosISBN() {
     const inputIsbn = document.getElementById('isbn');
     if (!inputIsbn) return;
 
-    // Remove traços e espaços para sanitizar o ISBN
     const isbnLimpo = inputIsbn.value.replace(/[^0-9X]/gi, '');
     if (!isbnLimpo || isbnLimpo.length < 10) return;
 
     try {
-        // Exibe um aviso visual no campo
         inputIsbn.style.borderColor = '#f59e0b';
-        
-        // Consulta a API da Open Library
         const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbnLimpo}&format=json&jscmd=data`;
         const response = await fetch(url);
         const data = await response.json();
@@ -1058,37 +909,25 @@ async function buscarDadosISBN() {
         if (data && data[bookKey]) {
             const livro = data[bookKey];
 
-            // Preenchimento dos Campos MARC21
-            if (livro.title) {
-                document.getElementById('titulo_principal').value = livro.title;
-            }
-
-            if (livro.subtitle) {
-                document.getElementById('subtitulo').value = livro.subtitle;
-            }
-
+            if (livro.title) document.getElementById('titulo_principal').value = livro.title;
+            if (livro.subtitle) document.getElementById('subtitulo').value = livro.subtitle;
             if (livro.authors && livro.authors.length > 0) {
                 document.getElementById('nome_pessoal').value = livro.authors.map(a => a.name).join('; ');
             }
-
             if (livro.publishers && livro.publishers.length > 0) {
                 document.getElementById('editora').value = livro.publishers.map(p => p.name).join(', ');
             }
-
             if (livro.publish_places && livro.publish_places.length > 0) {
                 document.getElementById('local_publicacao').value = livro.publish_places.map(p => p.name).join(', ');
             }
-
             if (livro.publish_date) {
                 const anoMatch = livro.publish_date.match(/\d{4}/);
                 document.getElementById('data_publicacao').value = anoMatch ? anoMatch[0] : livro.publish_date;
             }
-
             if (livro.number_of_pages) {
                 document.getElementById('numero_paginas').value = `${livro.number_of_pages} p.`;
                 document.getElementById('descricao_fisica').value = `${livro.number_of_pages} p.`;
             }
-
             if (livro.cover && livro.cover.large) {
                 const capaUrlInput = document.getElementById('capa_url');
                 const imgPreview = document.getElementById('imgPreviewCapa');
@@ -1099,12 +938,190 @@ async function buscarDadosISBN() {
                 if (containerPreview) containerPreview.style.display = 'flex';
             }
 
-            inputIsbn.style.borderColor = '#10b981'; // Verde para sucesso
+            inputIsbn.style.borderColor = '#10b981';
         } else {
             inputIsbn.style.borderColor = 'var(--border-color)';    
         }
     } catch (err) {
         console.warn('Erro ao carregar catalogação automática via ISBN:', err);
         inputIsbn.style.borderColor = 'var(--border-color)';
+    }
+}
+
+function popularSelectEtiquetas() {
+    const selMultiplo = document.getElementById('selectLivrosEtiquetasMultiplas');
+    if (!selMultiplo) return;
+
+    let optionsHtml = '';
+
+    if (Array.isArray(acervoCompleto)) {
+        const obrasAtivas = acervoCompleto.filter(l => !l.em_lixeira);
+
+        if (obrasAtivas.length === 0) {
+            optionsHtml = '<option value="">Nenhuma obra cadastrada no acervo...</option>';
+        } else {
+            obrasAtivas.forEach(l => {
+                const titulo = l.titulo_principal || l.tituloPrincipal || 'Sem Título';
+                const tombo = l.numero_tombo || 'Sem Tombo';
+                const autor = l.nome_pessoal || l.autor_entidade || 'Autor Desconhecido';
+
+                optionsHtml += `<option value="${l.id}">${autor} — "${titulo}" (Tombo: ${tombo})</option>`;
+            });
+        }
+    }
+
+    selMultiplo.innerHTML = optionsHtml;
+    atualizarPreviewFolhaA4();
+}
+
+function atualizarPreviewFolhaA4() {
+    const select = document.getElementById('selectLivrosEtiquetasMultiplas');
+    const container = document.getElementById('previewEtiquetasContainer');
+    if (!select || !container) return;
+
+    const idsSelecionados = Array.from(select.selectedOptions).map(opt => Number(opt.value)).filter(Boolean);
+
+    if (idsSelecionados.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #94a3b8; font-size: 0.8rem; padding: 40px 0;">
+                Nenhum livro selecionado acima.
+            </div>
+        `;
+        return;
+    }
+
+    const livrosParaPreview = acervoCompleto.filter(l => idsSelecionados.includes(Number(l.id)));
+    container.innerHTML = '';
+
+    livrosParaPreview.forEach((livro) => {
+        const autor = livro.nome_pessoal || livro.autor_entidade || 'Autor Desconhecido';
+        const titulo = livro.titulo_principal || livro.tituloPrincipal || 'Sem Título';
+        const tombo = livro.numero_tombo || '0000001';
+        const cdd = livro.classificacao_cdd || '000';
+        const cutter = livro.codigo_autor_cutter || '';
+        const edicao = livro.edicao || '1. ed.';
+        
+        const codigoBarrasReal = livro.isbn ? livro.isbn : tombo.replace(/[^0-9]/g, '').padEnd(13, '0').substring(0, 13);
+
+        container.innerHTML += `
+            <div style="background: #ffffff; color: #111827; border: 1.5px solid #0f172a; border-radius: 4px; padding: 10px; display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; height: 75px;">
+                <div style="position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: #0284c7;"></div>
+                
+                <div style="display: flex; flex-direction: column; justify-content: center; gap: 2px; padding-left: 6px; max-width: 68%;">
+                    <div style="font-size: 0.65rem; font-weight: bold; line-height: 1.15; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${autor} — "${titulo}"
+                    </div>
+                    <div style="font-family: monospace; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; color: #1e293b;">
+                        |||*${codigoBarrasReal}*|||
+                    </div>
+                    <div style="font-size: 0.65rem; font-weight: bold; color: #475569;">
+                        Tombo: ${tombo}
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right; font-size: 0.85rem; font-weight: bold; line-height: 1.2; padding-right: 2px;">
+                    <span style="color: #0284c7;">${cdd}</span>
+                    <span>${cutter}</span>
+                    <span style="font-size: 0.65rem; color: #64748b; font-weight: normal;">${edicao}</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function gerarFolhaA4Etiquetas() {
+    const select = document.getElementById('selectLivrosEtiquetasMultiplas');
+    if (!select) return;
+
+    const idsSelecionados = Array.from(select.selectedOptions).map(opt => Number(opt.value)).filter(Boolean);
+
+    if (idsSelecionados.length === 0) {
+        alert('Por favor, selecione ao menos uma obra na lista para gerar a folha A4.');
+        return;
+    }
+
+    const livrosParaImprimir = acervoCompleto.filter(l => idsSelecionados.includes(Number(l.id)));
+    const janelaImpressao = window.open('', '_blank', 'width=850,height=900');
+
+    let htmlEtiquetas = '';
+    livrosParaImprimir.forEach((livro) => {
+        const autor = livro.nome_pessoal || livro.autor_entidade || 'Autor Desconhecido';
+        const titulo = livro.titulo_principal || livro.tituloPrincipal || 'Sem Título';
+        const tombo = livro.numero_tombo || '0000001';
+        const cdd = livro.classificacao_cdd || '';
+        const cutter = livro.codigo_autor_cutter || '';
+        const edicao = livro.edicao || '';
+
+        const codigoBarrasReal = livro.isbn ? livro.isbn : tombo.replace(/[^0-9]/g, '').padEnd(13, '0').substring(0, 13);
+
+        htmlEtiquetas += `
+            <div class="etiqueta-bloco">
+                <div class="etiqueta-esq">
+                    <div class="autor-titulo">${autor}<br>"${titulo}"</div>
+                    <div class="codigo-barras-real">|||*${codigoBarrasReal}*|||</div>
+                    <div class="tombo-txt">Tombo: ${tombo}</div>
+                </div>
+                <div class="etiqueta-dir">
+                    <div class="cdd-txt">${cdd}</div>
+                    <div class="cutter-txt">${cutter}</div>
+                    <div class="edicao-txt">${edicao}</div>
+                </div>
+            </div>
+        `;
+    });
+
+    janelaImpressao.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <title>Impressão de Etiquetas A4 - FreechxRed</title>
+            <style>
+                @page { size: A4; margin: 10mm; }
+                body { font-family: 'Courier New', Courier, monospace; background: #fff; color: #000; margin: 0; padding: 0; }
+                .folha-a4 { width: 190mm; display: flex; flex-direction: column; gap: 6mm; }
+                .etiqueta-bloco { width: 100%; height: 48mm; border: 1px dashed #94a3b8; padding: 5mm 8mm; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; page-break-inside: avoid; background: #fff; }
+                .etiqueta-esq { display: flex; flex-direction: column; justify-content: center; gap: 4px; max-width: 68%; }
+                .autor-titulo { font-size: 10pt; font-weight: bold; line-height: 1.2; word-break: break-word; }
+                .codigo-barras-real { font-size: 13pt; letter-spacing: 2px; font-weight: bold; margin-top: 2px; }
+                .tombo-txt { font-size: 9pt; font-weight: bold; }
+                .etiqueta-dir { display: flex; flex-direction: column; align-items: flex-end; text-align: right; font-size: 12pt; font-weight: bold; line-height: 1.3; min-width: 28%; }
+                .edicao-txt { font-size: 9pt; font-weight: normal; color: #334155; margin-top: 2px; }
+            </style>
+        </head>
+        <body onload="window.print(); window.close();">
+            <div class="folha-a4">${htmlEtiquetas}</div>
+        </body>
+        </html>
+    `);
+    janelaImpressao.document.close();
+}
+
+function trocarSubAbaCatalogacao(aba, event) {
+    if (event) event.preventDefault();
+
+    const panePlanilha = document.getElementById('subTabContentPlanilha');
+    const paneEtiquetas = document.getElementById('subTabContentEtiquetas');
+    const btnPlanilha = document.getElementById('subTabBtnPlanilha');
+    const btnEtiquetas = document.getElementById('subTabBtnEtiquetas');
+
+    if (!panePlanilha || !paneEtiquetas) return;
+
+    if (aba === 'planilha') {
+        panePlanilha.style.display = 'block';
+        paneEtiquetas.style.display = 'none';
+
+        if (btnPlanilha) btnPlanilha.className = 'btn btn-primary sub-nav-btn';
+        if (btnEtiquetas) btnEtiquetas.className = 'btn btn-outline sub-nav-btn';
+    } else if (aba === 'etiquetas') {
+        panePlanilha.style.display = 'none';
+        paneEtiquetas.style.display = 'block';
+
+        if (btnEtiquetas) btnEtiquetas.className = 'btn btn-primary sub-nav-btn';
+        if (btnPlanilha) btnPlanilha.className = 'btn btn-outline sub-nav-btn';
+
+        if (typeof popularSelectEtiquetas === 'function') {
+            popularSelectEtiquetas();
+        }
     }
 }

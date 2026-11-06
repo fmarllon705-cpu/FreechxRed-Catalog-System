@@ -131,6 +131,73 @@ function inicializarEscutaRealtimeMensagens() {
 
 async function carregarPerfilUsuario() {
     await carregarListaChats();
+
+    const divPerfil = document.getElementById('tab-perfil');
+    if (!divPerfil) return;
+
+    if (!usuarioAtual || !usuarioAtual.id || usuarioAtual.nome === 'Visitante (Público)') {
+        return;
+    }
+
+    // 2. Renderizar Favoritos do Usuário Logado
+    const containerFavoritos = document.getElementById('meusFavoritosContainer');
+    if (containerFavoritos) {
+        if (!Array.isArray(listaFavoritos)) listaFavoritos = [];
+        const meusFavs = listaFavoritos.filter(f => Number(f.usuario_id) === Number(usuarioAtual.id));
+
+        if (meusFavs.length === 0) {
+            containerFavoritos.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Você ainda não possui livros favoritados.</p>';
+        } else {
+            containerFavoritos.innerHTML = '';
+            meusFavs.forEach(fav => {
+                const livro = (acervoCompleto || []).find(l => Number(l.id) === Number(fav.livro_id));
+                if (livro) {
+                    const capaSrc = livro.capa_url || livro.capaUrl || '';
+                    containerFavoritos.innerHTML += `
+                        <div class="favorite-item">
+                            <div class="book-info">
+                                <img src="${escaparHTML(capaSrc)}" alt="Capa" class="book-cover" onerror="this.src='https://via.placeholder.com/45x65?text=Sem+Capa'">
+                                <div class="book-details">
+                                    <span class="book-title">${escaparHTML(livro.titulo_principal || livro.tituloPrincipal)}</span>
+                                    <span class="book-author" style="display:block; font-size:0.8rem; color:var(--text-muted);">${escaparHTML(livro.nome_pessoal || livro.responsabilidade || 'Autor desconhecido')}</span>
+                                </div>
+                            </div>
+                            <button class="btn-remove" onclick="alternarFavorito(${livro.id})">
+                                <i class="fa-solid fa-trash"></i> Remover
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+        }
+    }
+
+    // 3. Renderizar Minhas Reservas / Pedidos
+    const containerReservas = document.getElementById('minhasReservasContainer') || document.getElementById('tbMinhasReservas');
+    if (containerReservas) {
+        if (!Array.isArray(listaReservas)) listaReservas = [];
+        const minhasRes = listaReservas.filter(r => Number(r.usuario_id) === Number(usuarioAtual.id));
+
+        if (minhasRes.length === 0) {
+            containerReservas.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); font-size:0.85rem;">Nenhuma reserva realizada.</td></tr>';
+        } else {
+            containerReservas.innerHTML = '';
+            minhasRes.forEach(res => {
+                const livro = (acervoCompleto || []).find(l => Number(l.id) === Number(res.livro_id));
+                const dataFmt = res.data_reserva ? new Date(res.data_reserva).toLocaleDateString('pt-BR') : '-';
+                containerReservas.innerHTML += `
+                    <tr>
+                        <td><strong>${escaparHTML(livro ? (livro.titulo_principal || livro.tituloPrincipal) : 'Livro Removido')}</strong></td>
+                        <td>${dataFmt}</td>
+                        <td><strong>${escaparHTML(res.status)}</strong></td>
+                        <td>
+                            ${res.status === 'Pendente' ? `<button class="btn btn-danger" style="padding:2px 8px; font-size:0.75rem;" onclick="cancelarReserva(${res.id})">Cancelar</button>` : '-'}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    }
 }
 
 async function carregarListaChats() {
@@ -224,10 +291,6 @@ async function selecionarChat(chat) {
 }
 
 // ==========================================
-// PAINEL DO CHAT
-// ==========================================
-
-// ==========================================
 // PAINEL DO CHAT & PROGRESSÃO POR PÁGINA
 // ==========================================
 
@@ -239,17 +302,14 @@ async function renderizarPainelChatAtivo() {
     let tituloLivro = 'Nenhum livro definido para este grupo';
     let totalPaginasLivro = 100;
 
-    // Buscar páginas reais do acervo ou do livro externo
     if (chatAtivoSelecionado.livro_atual_id) {
         const livroAcervo = Array.isArray(acervoCompleto)
             ? acervoCompleto.find(l => Number(l.id) === Number(chatAtivoSelecionado.livro_atual_id))
             : null;
 
         if (livroAcervo) {
-            capaLivro = livroAcervo.capa_url || '';
+            capaLivro = livroAcervo.capa_url || livro.capaUrl || '';
             tituloLivro = livroAcervo.titulo_principal || livroAcervo.tituloPrincipal || 'Sem título';
-            
-            // Extrai apenas os números do campo de páginas (ex: "240 p." -> 240)
             const paginasDigitos = String(livroAcervo.numero_paginas || '').replace(/\D/g, '');
             totalPaginasLivro = parseInt(paginasDigitos, 10) || 100;
         }
@@ -738,10 +798,15 @@ function abrirModalSelecionarLivro() {
 
 function alternarOrigemLivroChat(origem) {
     modoOrigemLivro = origem;
-    document.getElementById('btnAbaAcervoChat').className = origem === 'acervo' ? 'btn btn-primary' : 'btn btn-outline';
-    document.getElementById('btnAbaForaChat').className = origem === 'fora' ? 'btn btn-primary' : 'btn btn-outline';
-    document.getElementById('boxLivroAcervoChat').style.display = origem === 'acervo' ? 'block' : 'none';
-    document.getElementById('boxLivroForaChat').style.display = origem === 'fora' ? 'block' : 'none';
+    const btnAcervo = document.getElementById('btnAbaAcervoChat');
+    const btnFora = document.getElementById('btnAbaForaChat');
+    const boxAcervo = document.getElementById('boxLivroAcervoChat');
+    const boxFora = document.getElementById('boxLivroForaChat');
+
+    if (btnAcervo) btnAcervo.className = origem === 'acervo' ? 'btn btn-primary' : 'btn btn-outline';
+    if (btnFora) btnFora.className = origem === 'fora' ? 'btn btn-primary' : 'btn btn-outline';
+    if (boxAcervo) boxAcervo.style.display = origem === 'acervo' ? 'block' : 'none';
+    if (boxFora) boxFora.style.display = origem === 'fora' ? 'block' : 'none';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -758,71 +823,3 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Erro na inicialização:', err);
     }
 });
-
-async function carregarPerfilUsuario() {
-    // 1. Atualiza lista de conversas ativas no chat
-    await carregarListaChats();
-
-    const divPerfil = document.getElementById('tab-perfil');
-    if (!divPerfil) return;
-
-    if (!usuarioAtual || !usuarioAtual.id || usuarioAtual.nome === 'Visitante (Público)') {
-        return;
-    }
-
-    // 2. Renderizar Favoritos do Usuário Logado
-    const containerFavoritos = document.getElementById('meusFavoritosContainer');
-    if (containerFavoritos) {
-        if (!Array.isArray(listaFavoritos)) listaFavoritos = [];
-        const meusFavs = listaFavoritos.filter(f => Number(f.usuario_id) === Number(usuarioAtual.id));
-
-        if (meusFavs.length === 0) {
-            containerFavoritos.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Você ainda não possui livros favoritados.</p>';
-        } else {
-            containerFavoritos.innerHTML = '';
-            meusFavs.forEach(fav => {
-                const livro = (acervoCompleto || []).find(l => Number(l.id) === Number(fav.livro_id));
-                if (livro) {
-                    containerFavoritos.innerHTML += `
-                        <div style="padding:8px 12px; background:var(--bg-tertiary); border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:0.88rem; font-weight:500;">${escaparHTML(livro.titulo_principal || livro.tituloPrincipal)}</span>
-                            <button class="btn btn-danger" style="padding:2px 8px; font-size:0.75rem;" onclick="alternarFavorito(${livro.id})">
-                                <i class="fa-solid fa-trash"></i> Remover
-                            </button>
-                        </div>
-                    `;
-                }
-            });
-        }
-    }
-
-    // 3. Renderizar Minhas Reservas / Pedidos
-    const containerReservas = document.getElementById('minhasReservasContainer');
-    if (containerReservas) {
-        if (!Array.isArray(listaReservas)) listaReservas = [];
-        const minhasRes = listaReservas.filter(r => Number(r.usuario_id) === Number(usuarioAtual.id));
-
-        if (minhasRes.length === 0) {
-            containerReservas.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Nenhuma reserva realizada.</p>';
-        } else {
-            containerReservas.innerHTML = '';
-            minhasRes.forEach(res => {
-                const livro = (acervoCompleto || []).find(l => Number(l.id) === Number(res.livro_id));
-                const dataFmt = res.data_reserva ? new Date(res.data_reserva).toLocaleDateString('pt-BR') : '-';
-                containerReservas.innerHTML += `
-                    <div style="padding:8px 12px; background:var(--bg-tertiary); border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <strong style="font-size:0.88rem;">${escaparHTML(livro ? (livro.titulo_principal || livro.tituloPrincipal) : 'Livro Removido')}</strong>
-                            <div style="font-size:0.75rem; color:var(--text-muted);">Data: ${dataFmt} | Status: <strong>${res.status}</strong></div>
-                        </div>
-                        ${res.status === 'Pendente' ? `
-                            <button class="btn btn-danger" style="padding:2px 8px; font-size:0.75rem;" onclick="cancelarReserva(${res.id})">
-                                Cancelar
-                            </button>
-                        ` : ''}
-                    </div>
-                `;
-            });
-        }
-    }
-}

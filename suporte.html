@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suporte & Atendimento • FreechxRed</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="scripts/style.css">
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="logo-box">
+            <div>
+                <h1>FreechxRed</h1>
+                <h3>Central de Suporte e Atendimento</h3>
+            </div>
+        </div>
+    </div>
+</header>
+
+<nav class="main-nav">
+    <div class="nav-container">
+        <a href="index.html" class="nav-tab active"><i class="fa-solid fa-house"></i> Home / Consulta</a>
+        <a href="minha-area.html" class="nav-tab" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
+        <a href="circulacao.html" class="nav-tab" id="tabNavCirculacao" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Circulação</a>
+        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-file-pen"></i> Catalogação</a>
+        <a href="suporte.html" class="nav-tab"><i class="fa-solid fa-headset"></i> Suporte</a>
+        <a href="usuarios.html" class="nav-tab" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-users-gear"></i> Gestão de Usuários</a>
+        <a href="lixeira.html" class="nav-tab" id="tabNavLixeira" style="display: none;"><i class="fa-solid fa-trash-can"></i> Lixeira</a>
+    </div>
+</nav>
+
+<main class="container">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fa-solid fa-headset"></i> Fale Conosco & Ajuda</span>
+        </div>
+        <form id="formSuporte" style="display:flex; flex-direction:column; gap:12px;">
+            <div class="form-group">
+                <label>Assunto</label>
+                <input type="text" placeholder="Ex: Dúvida sobre empréstimo ou doação">
+            </div>
+            <div class="form-group">
+                <label>Mensagem / Feedback</label>
+                <textarea rows="4" placeholder="Escreva aqui sua mensagem ou avaliação do sistema..."></textarea>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" onclick="alert('Mensagem enviada com sucesso!')"><i class="fa-solid fa-paper-plane"></i> Enviar Feedback</button>
+            </div>
+        </form>
+    </div>
+</main>
+</body>
+</html>

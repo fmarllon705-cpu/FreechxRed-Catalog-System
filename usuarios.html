@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão do Sistema • FreechxRed</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="scripts/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="scripts/script.js" defer></script>
+    <script src="scripts/gestão.js" defer></script>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="logo-box">
+            <div>
+                <h1>FreechxRed</h1>
+                <h3>Administração e Controle de Acesso</h3>
+            </div>
+        </div>
+    </div>
+</header>
+
+<nav class="main-nav">
+    <div class="nav-container">
+        <a href="index.html" class="nav-tab"><i class="fa-solid fa-house"></i> Home / Consulta</a>
+        <a href="minha-area.html" class="nav-tab" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
+        <a href="circulacao.html" class="nav-tab" id="tabNavCirculacao" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Circulação</a>
+        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-file-pen"></i> Catalogação</a>
+        <a href="suporte.html" class="nav-tab"><i class="fa-solid fa-headset"></i> Suporte</a>
+        <a href="usuarios.html" class="nav-tab active" id="tabNavUsuarios"><i class="fa-solid fa-users-gear"></i> Gestão de Usuários</a>
+        <a href="lixeira.html" class="nav-tab" id="tabNavLixeira" style="display: none;"><i class="fa-solid fa-trash-can"></i> Lixeira</a>
+    </div>
+</nav>
+
+<main class="container">
+    <div id="contentUsuarios">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title" id="tituloFormUsuario"><i class="fa-solid fa-user-plus"></i> Cadastrar Novo Usuário / Equipe</span>
+            </div>
+
+            <form id="formUsuario" onsubmit="cadastrarUsuario(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="usrNome">Nome Completo</label>
+                        <input type="text" id="usrNome" required placeholder="Nome Completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="usrUsuario">Identidade de Login</label>
+                        <input type="text" id="usrUsuario" required placeholder="Login">
+                    </div>
+                    <div class="form-group">
+                        <label for="usrEmail">E-mail</label>
+                        <input type="email" id="usrEmail" required placeholder="email@dominio.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="usrSenha">Senha</label>
+                        <input type="password" id="usrSenha" required placeholder="******">
+                    </div>
+                    <div class="form-group">
+                        <label for="usrCargo">Cargo / Perfil</label>
+                        <select id="usrCargo" required>
+                            <option value="usuario">Usuário (Leitor)</option>
+                            <option value="estagiario">Estagiário</option>
+                            <option value="bibliotecario">Bibliotecário (Admin)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group" style="margin-top:15px; display:flex; gap: 8px;">
+                    <button type="submit" id="btnSubmitUsuario" class="btn btn-primary"><i class="fa-solid fa-check"></i> Cadastrar Usuário</button>
+                    <button type="button" id="btnCancelarEdicaoUsuario" class="btn btn-outline" style="display:none;" onclick="cancelarEdicaoUsuario()"><i class="fa-solid fa-xmark"></i> Cancelar Edição</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-users"></i> Usuários Cadastrados</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Usuário</th>
+                            <th>E-mail</th>
+                            <th>Cargo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbUsuarios">
+                        <tr><td colspan="5">Carregando usuários...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

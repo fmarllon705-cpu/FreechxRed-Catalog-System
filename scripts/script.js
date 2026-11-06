@@ -9,8 +9,6 @@ if (window.supabase && typeof window.supabase.createClient === 'function') {
     supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 }
 
-// Disponibiliza o cliente também no objeto window para compatibilidade
-// com módulos que acessam o Supabase por window.supabaseClient.
 window.supabaseClient = supabaseClient;
 
 // ESTADO GLOBAL
@@ -47,20 +45,28 @@ window.onload = function () {
 // 3. GERENCIAMENTO DE PERMISSÕES E INTERFACE
 // ==========================================
 function atualizarInterfacePermissoes() {
+    const cargo = (usuarioAtual.cargo || 'usuario').toLowerCase();
+    const isLogado = usuarioAtual.nome !== 'Visitante (Público)';
+    const isEstagiarioOuAdmin = (cargo === 'bibliotecario' || cargo === 'estagiario');
+    const isAdmin = (cargo === 'bibliotecario');
+
+    const tabEtiquetas = document.getElementById('tabNavEtiquetas');
+    if (tabEtiquetas) tabEtiquetas.style.display = isEstagiarioOuAdmin ? 'flex' : 'none';
+
+    const lockEtq = document.getElementById('lockEtiquetas');
+    const contentEtq = document.getElementById('contentEtiquetas');
+    if (lockEtq) lockEtq.style.display = isEstagiarioOuAdmin ? 'none' : 'block';
+    if (contentEtq) contentEtq.style.display = isEstagiarioOuAdmin ? 'block' : 'none';
+
     const lblName = document.getElementById('lblUserName');
     const badge = document.getElementById('lblUserRole');
 
     if (lblName) lblName.innerText = usuarioAtual.nome;
 
-    const cargo = (usuarioAtual.cargo || 'usuario').toLowerCase();
     if (badge) {
         badge.innerText = cargo.toUpperCase();
         badge.className = `role-badge role-${cargo}`;
     }
-
-    const isLogado = usuarioAtual.nome !== 'Visitante (Público)';
-    const isEstagiarioOuAdmin = (cargo === 'bibliotecario' || cargo === 'estagiario');
-    const isAdmin = (cargo === 'bibliotecario');
 
     const btnLoginHeader = document.getElementById('btnHeaderLogin');
     if (btnLoginHeader) {
@@ -101,9 +107,6 @@ function atualizarInterfacePermissoes() {
     if (contentLix) contentLix.style.display = isAdmin ? 'block' : 'none';
 }
 
-// ==========================================
-// NAVEGAÇÃO ENTRE ABAS
-// ==========================================
 function trocarAba(abaId) {
     const abas = document.querySelectorAll('.tab-content, .tab-pane');
     const botoes = document.querySelectorAll('.nav-tab, .tab-button');
@@ -122,7 +125,6 @@ function trocarAba(abaId) {
         }
     });
 
-    // Atualiza listagens de acordo com a aba ativada
     if (abaId === 'perfil' && typeof carregarPerfilUsuario === 'function') {
         carregarPerfilUsuario();
     } else if (abaId === 'circulacao') {
@@ -244,6 +246,17 @@ async function carregarAcervo() {
     renderizarCarrosseis(acervoAtivo);
     renderizarLixeira();
     populaSelectsEmprestimo();
+
+    if (typeof popularSelectEtiquetas === 'function') {
+        popularSelectEtiquetas();
+    }
+
+    // CORREÇÃO: Verifica se veio parâmetro de edição na URL após carregar o acervo
+    const urlParams = new URLSearchParams(window.location.search);
+    const idEditar = urlParams.get('editar');
+    if (idEditar && typeof editarLivro === 'function') {
+        editarLivro(idEditar);
+    }
 }
 
 function renderizarTabelaAcervo(lista) {
@@ -290,7 +303,7 @@ function renderizarTabelaAcervo(lista) {
                     <div class="acervo-title">"${livro.titulo_principal || livro.tituloPrincipal || 'Sem título'}"</div>
                     <div class="acervo-author">${livro.nome_pessoal || livro.nomePessoal || livro.autor_entidade || 'Autor não informado'}</div>
                     <div class="acervo-meta"><strong>Tipo:</strong> ${livro.tipo_material || 'Livros'} — <strong>Tombo:</strong> <span style="color:#38bdf8; font-weight:bold;">${tomboDisplay}</span></div>
-                    <div class="acervo-meta"><strong>Localização (CDD/Cutter):</strong> <span class="acervo-location-code">${livro.classificacao_cdd || '000'} ${livro.codigo_autor_cutter || ''}</span> (${livro.codigo_livro || 'Sem Chamada'})</div>
+                    <div class="acervo-meta"><strong>Localização (CDD/Cutter):</strong> <span class="acervo-location-code">${livro.classificacao_cdd || '000'} ${livro.codigo_autor_cutter || ''}</span> (${livro.codigo_livro || livro.numero_chamada_local || 'Sem Chamada'})</div>
                     <div class="acervo-meta"><strong>Publicação:</strong> ${livro.local_publicacao || 'Belém'} : ${livro.editora || 'Malo'}, ${livro.data_publicacao || '2026'}.</div>
                     <div class="acervo-meta"><strong>Assunto:</strong> ${livro.assunto || 'Trânsito'}</div>
                 </div>
@@ -364,6 +377,7 @@ function renderizarCarrosseis(lista) {
 function filtrarAcervo() {
     const termo = document.getElementById('txtBusca').value.toLowerCase().trim();
     const acervoAtivo = acervoCompleto.filter(l => !l.em_lixeira);
+    
     const filtrados = acervoAtivo.filter(l => {
         const tit = (l.titulo_principal || l.tituloPrincipal || '').toLowerCase();
         const aut = (l.nome_pessoal || l.nomePessoal || l.autor_entidade || '').toLowerCase();
@@ -372,7 +386,12 @@ function filtrarAcervo() {
         const cdd = (l.classificacao_cdd || l.classificacao || '').toLowerCase();
         const tombo = (l.numero_tombo || l.tombo || '').toLowerCase();
 
-        return tit.includes(termo) || aut.includes(termo) || ass.includes(termo) || isbn.includes(termo) || cdd.includes(termo) || tombo.includes(termo);
+        return tit.includes(termo) || 
+               aut.includes(termo) || 
+               ass.includes(termo) || 
+               isbn.includes(termo) || 
+               cdd.includes(termo) || 
+               tombo.includes(termo);
     });
 
     renderizarTabelaAcervo(filtrados);
@@ -386,15 +405,15 @@ function alternarVisaoAcervo(modo) {
     const btnGrade = document.getElementById('btnVisaoGrade');
 
     if (modo === 'grade') {
-        visaoLista.style.display = 'none';
-        visaoGrade.style.display = 'flex';
-        btnLista.classList.remove('active');
-        btnGrade.classList.add('active');
+        if (visaoLista) visaoLista.style.display = 'none';
+        if (visaoGrade) visaoGrade.style.display = 'flex';
+        if (btnLista) btnLista.classList.remove('active');
+        if (btnGrade) btnGrade.classList.add('active');
     } else {
-        visaoLista.style.display = 'flex';
-        visaoGrade.style.display = 'none';
-        btnGrade.classList.remove('active');
-        btnLista.classList.add('active');
+        if (visaoLista) visaoLista.style.display = 'flex';
+        if (visaoGrade) visaoGrade.style.display = 'none';
+        if (btnGrade) btnGrade.classList.remove('active');
+        if (btnLista) btnLista.classList.add('active');
     }
 }
 
@@ -403,38 +422,4 @@ function rolarCarrossel(idCarrossel, deslocamento) {
     if (container) {
         container.scrollBy({ left: deslocamento, behavior: 'smooth' });
     }
-}
-
-function renderizarFavoritos(listaFavoritos) {
-    const container = document.getElementById('meusFavoritosContainer');
-    
-    if (!listaFavoritos || listaFavoritos.length === 0) {
-        container.innerHTML = `<p style="color:var(--text-muted); padding:10px;">Nenhum livro favoritado.</p>`;
-        return;
-    }
-
-    let html = '';
-    listaFavoritos.forEach(livro => {
-        // Define uma imagem padrão caso a capa esteja vazia ou nula
-        let capaSrc = livro.capa_url && livro.capa_url.trim() !== '' 
-            ? livro.capa_url 
-            : 'caminho/para/capa-padrao.jpg'; // ou deixe um link de placeholder se preferir
-
-        html += `
-            <div class="favorite-item">
-                <div class="book-info">
-                    <img src="${capaSrc}" alt="Capa de ${livro.titulo_principal}" class="book-cover" onerror="this.src='https://via.placeholder.com/45x65?text=Sem+Capa'">
-                    <div class="book-details">
-                        <span class="book-title">${livro.titulo_principal || 'Título Desconhecido'}</span>
-                        <span class="book-author" style="display:block; font-size:0.8rem; color:var(--text-muted);">${livro.nome_pessoal || livro.responsabilidade || 'Autor desconhecido'}</span>
-                    </div>
-                </div>
-                <button class="btn-remove" onclick="removerFavorito('${livro.id || livro.numero_tombo}')">
-                    <i class="fa-solid fa-trash"></i> Remover
-                </button>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
 }

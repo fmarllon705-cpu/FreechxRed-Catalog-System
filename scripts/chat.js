@@ -1,137 +1,294 @@
 // ==========================================
-// MÓDULO DE CHAT & CLUBE DO LEITOR
+// VENOUS • CHAT EM TEMPO REAL
+// Realtime: mensagens, progresso, membros, troca de livro, presença online,
+// "digitando…", não lidas, reconexão automática e ressincronização.
 // ==========================================
+const TITULO_BASE = document.title.replace(/^\(\d+\)\s*/, '');
+const EMOJIS = [...'😀😃😄😁😆😅😂🤣😊😇🙂😉😍🥰😘😋😜🤓😎🥳😏😢😭😡😱🤗🤔🤫🙄😴🤢🤠👋👌👍👎👏🙌🙏💪🧠👀💖💕💛💚💙💜🖤💔📚📖🔖'];
+let listaChatsUsuario = [], chatAtivoSelecionado = null, modoOrigemLivro = 'acervo';
+let canalGlobal = null, canalSala = null, tentativas = 0, digitando = {}, ultimoDigitando = 0;
+const naoLidas = {}, online = new Set(), timersDigitando = {};
+const $ = id => document.getElementById(id);
+const logado = () => !!(usuarioAtual && usuarioAtual.id && usuarioAtual.nome !== 'Visitante (Público)');
+const mesmoId = (a, b) => Number(a) === Number(b);
+const chaveLido = id => `venous_lido_${usuarioAtual.id}_${id}`;
+const ultimoLido = id => { try { return localStorage.getItem(chaveLido(id)) || '1970-01-01T00:00:00Z'; } catch (_) { return '1970-01-01T00:00:00Z'; } };
 
-let listaChatsUsuario = [];
-let chatAtivoSelecionado = null;
-let modoOrigemLivro = 'acervo';
-let escutaChatChannel = null;
+function fecharModal(id) { $(id)?.classList.remove('active'); }
+function rolarChatParaFim() { const b = $('boxMensagensChat'); if (b) b.scrollTop = b.scrollHeight; }
 
-// ==========================================
-// UTILITÁRIOS
-// ==========================================
-
-if ("Notification" in window && Notification.permission === "default") {
-    Notification.requestPermission();
-}
-
-function escaparHTML(valor) {
-    return String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function fecharModal(idModal) {
-    const modal = document.getElementById(idModal);
-    if (modal) {
-        modal.classList.remove('active');
-    }
-}
-
-// ==========================================
-// NOTIFICAÇÕES (SOM + WEB NOTIFICATION)
-// ==========================================
-
+// ---------- Som e notificações ----------
 function tocarSomNotificacao() {
     try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) return;
-
-        const audioCtx = new AudioContextClass();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.15);
-    } catch (e) {
-        console.warn("Não foi possível tocar o áudio da notificação:", e);
-    }
+        const A = window.AudioContext || window.webkitAudioContext; if (!A) return;
+        const ctx = (window._audioCtx ||= new A()); ctx.resume?.();
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 587.33; g.gain.value = 0.1; o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.15);
+    } catch (_) {}
 }
-
-function exibirNotificacaoMensagem(nomeRemetente, textoMensagem) {
+function notificar(nome, texto) {
     tocarSomNotificacao();
-
-    textoMensagem = String(textoMensagem || '');
-    nomeRemetente = String(nomeRemetente || 'Membro do Grupo');
-
-    if ("Notification" in window && Notification.permission === "granted") {
+    if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
         try {
-            new Notification(`Nova mensagem de ${nomeRemetente}`, {
-                body: textoMensagem.length > 50 ? textoMensagem.substring(0, 50) + "..." : textoMensagem,
-                icon: 'https://cdn-icons-png.flaticon.com/512/134/134937.png'
-            });
-        } catch (err) {
-            console.warn("Erro ao exibir Web Notification:", err);
+            const n = new Notification(`Venous • ${nome}`, { body: texto.length > 80 ? texto.slice(0, 80) + '…' : texto, tag: 'venous-chat' });
+            n.onclick = () => { window.focus(); n.close(); };
+        } catch (_) {}
+    }
+}
+function atualizarTitulo() {
+    const n = Object.values(naoLidas).reduce((a, b) => a + b, 0);
+    document.title = (n ? `(${n}) ` : '') + TITULO_BASE;
+}
+
+// ---------- Não lidas ----------
+async function calcularNaoLidas() {
+    Object.keys(naoLidas).forEach(k => delete naoLidas[k]);
+    const ids = listaChatsUsuario.map(c => c.id);
+    if (!ids.length) return;
+    const menor = ids.map(ultimoLido).sort()[0];
+    const { data } = await supabaseClient.from('chat_mensagens').select('chat_id,created_at')
+        .in('chat_id', ids).neq('usuario_id', usuarioAtual.id).gt('created_at', menor).limit(1000);
+    (data || []).forEach(r => { if (r.created_at > ultimoLido(r.chat_id)) naoLidas[r.chat_id] = (naoLidas[r.chat_id] || 0) + 1; });
+}
+function marcarLidoAtivo() {
+    if (!chatAtivoSelecionado || document.hidden) return;
+    const t = $('boxMensagensChat')?.lastElementChild?.dataset.t;
+    if (t) try { localStorage.setItem(chaveLido(chatAtivoSelecionado.id), t); } catch (_) {}
+    if (naoLidas[chatAtivoSelecionado.id]) { delete naoLidas[chatAtivoSelecionado.id]; renderizarListaChats(); atualizarTitulo(); }
+}
+
+// ---------- Lista de conversas ----------
+function renderizarListaChats() {
+    const cont = $('listaConversas'); if (!cont) return;
+    if (!listaChatsUsuario.length) { cont.innerHTML = '<p class="muted" style="font-size:.85rem;padding:10px">Você não possui conversas ativas.</p>'; return; }
+    cont.innerHTML = listaChatsUsuario.map(c => {
+        const n = naoLidas[c.id] || 0, ativo = chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, c.id);
+        return `<div class="chat-item${ativo ? ' active' : ''}" data-chat="${c.id}"><i class="fa-solid ${c.tipo === 'grupo' ? 'fa-users' : 'fa-user'}"></i><span class="chat-nome">${escaparHTML(c.nome)}</span>${n ? `<span class="chat-badge">${n > 99 ? '99+' : n}</span>` : ''}</div>`;
+    }).join('');
+    cont.onclick = e => { const el = e.target.closest('[data-chat]'); if (el) selecionarChat(listaChatsUsuario.find(c => String(c.id) === el.dataset.chat)); };
+}
+
+async function carregarListaChats() {
+    const cont = $('listaConversas');
+    if (!logado()) { if (cont) cont.innerHTML = '<p class="muted" style="padding:10px">Faça login para utilizar o chat.</p>'; return; }
+    if (!supabaseClient) { if (cont) cont.innerHTML = '<p class="muted" style="padding:10px">Banco de dados desconectado.</p>'; return; }
+    try {
+        const { data: m, error } = await supabaseClient.from('chat_membros').select('chat_id').eq('usuario_id', usuarioAtual.id);
+        if (error) throw error;
+        const ids = (m || []).map(x => x.chat_id); let chats = [];
+        if (ids.length) {
+            const r = await supabaseClient.from('chats_grupos').select('*').in('id', ids).order('created_at', { ascending: false });
+            if (r.error) throw r.error; chats = r.data || [];
         }
+        const antes = listaChatsUsuario.map(c => c.id).sort().join();
+        listaChatsUsuario = chats;
+        await calcularNaoLidas(); renderizarListaChats(); atualizarTitulo();
+        if (antes !== chats.map(c => c.id).sort().join() || !canalGlobal) assinar();
+    } catch (err) {
+        console.error('Erro ao carregar chats:', err);
+        if (cont) cont.innerHTML = '<p style="color:var(--accent-red);padding:10px">Erro ao carregar conversas.</p>';
     }
 }
 
-// ==========================================
-// REALTIME DO SUPABASE
-// ==========================================
+// ---------- Realtime global (postgres_changes) ----------
+async function assinar() {
+    if (!supabaseClient || !logado()) return;
+    if (canalGlobal) { const velho = canalGlobal; canalGlobal = null; supabaseClient.removeChannel(velho); }
+    const ids = listaChatsUsuario.map(c => c.id), pg = (table, event, filter, fn) => ({ args: [{ event, schema: 'public', table, filter }, fn] });
+    let ch = supabaseClient.channel('venous-chat-' + usuarioAtual.id)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_membros', filter: `usuario_id=eq.${usuarioAtual.id}` }, () => carregarListaChats());
+    if (ids.length) {
+        const porChat = `chat_id=in.(${ids.join(',')})`, ativo = n => chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, n?.chat_id);
+        ch = ch
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensagens', filter: porChat }, p => aoReceberMensagem(p.new))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'progresso_leitura', filter: porChat }, p => { if (ativo(p.new)) atualizarAreaLeitura(); })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_membros', filter: porChat }, p => { if (ativo(p.new)) atualizarAreaLeitura(); })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chats_grupos', filter: `id=in.(${ids.join(',')})` }, p => aoAtualizarChat(p.new));
+    }
+    canalGlobal = ch;
+    ch.subscribe(status => {
+        if (ch !== canalGlobal) return;
+        if (status === 'SUBSCRIBED') { tentativas = 0; sincronizar(); }
+        else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) setTimeout(assinar, Math.min(30000, 1000 * 2 ** tentativas++));
+    });
+}
 
-function inicializarEscutaRealtimeMensagens() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        console.warn('Supabase ainda não está disponível para o realtime do chat.');
+// Busca o que foi perdido (queda de rede, aba em segundo plano)
+async function sincronizar() {
+    if (!logado() || !supabaseClient) return;
+    if (chatAtivoSelecionado) {
+        const ts = [...($('boxMensagensChat')?.querySelectorAll('[data-t]') || [])].map(e => e.dataset.t).filter(t => !t.startsWith('tmp')).sort();
+        const q = supabaseClient.from('chat_mensagens').select('*').eq('chat_id', chatAtivoSelecionado.id).order('created_at');
+        const { data } = ts.length ? await q.gt('created_at', ts[ts.length - 1]) : await q.limit(100);
+        (data || []).forEach(m => adicionarMensagemNaTela(m));
+        marcarLidoAtivo();
+    }
+    await calcularNaoLidas(); renderizarListaChats(); atualizarTitulo();
+}
+
+function aoReceberMensagem(m) {
+    const ativo = chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, m.chat_id), meu = mesmoId(m.usuario_id, usuarioAtual.id);
+    if (ativo) { adicionarMensagemNaTela(m); delete digitando[m.usuario_id]; pintarDigitando(); if (!document.hidden) marcarLidoAtivo(); }
+    if (meu) return;
+    if (!ativo || document.hidden) {
+        naoLidas[m.chat_id] = (naoLidas[m.chat_id] || 0) + (ativo && !document.hidden ? 0 : 1);
+        renderizarListaChats(); atualizarTitulo(); notificar(m.nome_usuario || 'Membro do grupo', String(m.texto || ''));
+    }
+}
+function aoAtualizarChat(n) {
+    const i = listaChatsUsuario.findIndex(c => mesmoId(c.id, n.id)); if (i >= 0) listaChatsUsuario[i] = n;
+    if (chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, n.id)) { chatAtivoSelecionado = n; atualizarAreaLeitura(); }
+    renderizarListaChats();
+}
+
+// ---------- Sala ativa: presença online + "digitando…" ----------
+function sairDaSala() { if (canalSala) { supabaseClient.removeChannel(canalSala); canalSala = null; } online.clear(); digitando = {}; }
+function entrarNaSala(chat) {
+    sairDaSala(); if (!supabaseClient) return;
+    const ch = supabaseClient.channel('sala:' + chat.id, { config: { presence: { key: String(usuarioAtual.id) }, broadcast: { self: false } } });
+    ch.on('presence', { event: 'sync' }, () => { online.clear(); Object.keys(ch.presenceState()).forEach(k => online.add(Number(k))); pintarOnline(); })
+      .on('broadcast', { event: 'digitando' }, ({ payload }) => mostrarDigitando(payload))
+      .subscribe(async s => { if (s === 'SUBSCRIBED') await ch.track({ nome: usuarioAtual.nome }); });
+    canalSala = ch;
+}
+function pintarOnline() {
+    document.querySelectorAll('[data-uid]').forEach(e => e.classList.toggle('on', online.has(Number(e.dataset.uid))));
+    const n = $('contadorOnline'); if (n) n.textContent = online.size ? ` • ${online.size} online` : '';
+}
+function anunciarDigitando() {
+    const t = Date.now(); if (t - ultimoDigitando < 2000 || !canalSala) return; ultimoDigitando = t;
+    canalSala.send({ type: 'broadcast', event: 'digitando', payload: { id: usuarioAtual.id, nome: usuarioAtual.nome } });
+}
+function mostrarDigitando(p) {
+    digitando[p.id] = p.nome; clearTimeout(timersDigitando[p.id]);
+    timersDigitando[p.id] = setTimeout(() => { delete digitando[p.id]; pintarDigitando(); }, 3500); pintarDigitando();
+}
+function pintarDigitando() {
+    const el = $('indicadorDigitando'); if (!el) return; const n = Object.values(digitando);
+    el.textContent = n.length ? `${n.join(', ')} ${n.length > 1 ? 'estão digitando…' : 'está digitando…'}` : '';
+}
+
+// ---------- Painel do chat (renderizado uma vez; só as partes mudam depois) ----------
+async function selecionarChat(chat) {
+    if (!chat) return;
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+    chatAtivoSelecionado = chat; delete naoLidas[chat.id];
+    renderizarListaChats(); atualizarTitulo(); entrarNaSala(chat);
+    await renderizarPainelChatAtivo();
+}
+
+async function renderizarPainelChatAtivo() {
+    const c = $('painelChatAtivo'), chat = chatAtivoSelecionado; if (!c || !chat) return;
+    c.innerHTML = `
+<div class="chat-head"><strong><i class="fa-solid ${chat.tipo === 'grupo' ? 'fa-users' : 'fa-user'}"></i> ${escaparHTML(chat.nome)}<small id="contadorOnline"></small></strong>
+<button class="btn btn-outline btn-sm" onclick="abrirModalSelecionarLivro()"><i class="fa-solid fa-book-bookmark"></i> Definir Livro</button></div>
+<div class="chat-leitura" id="areaLeitura"></div>
+<div id="boxMensagensChat"></div>
+<div class="chat-digitando" id="indicadorDigitando"></div>
+<div class="chat-emoji" id="emojiPickerContainer">${EMOJIS.map(e => `<span onclick="inserirEmoji('${e}')">${e}</span>`).join('')}</div>
+<div class="chat-form"><button type="button" class="btn btn-outline" onclick="alternarPickerEmoji()" title="Emoji">😊</button>
+<input id="txtMensagemChat" placeholder="Digite sua mensagem..." autocomplete="off" maxlength="2000" oninput="anunciarDigitando()" onkeydown="if(event.key==='Enter')enviarMensagemChat()">
+<button class="btn btn-primary" onclick="enviarMensagemChat()" title="Enviar"><i class="fa-solid fa-paper-plane"></i></button></div>`;
+    await Promise.all([atualizarAreaLeitura(), carregarMensagens()]);
+    $('txtMensagemChat')?.focus();
+}
+
+async function carregarMensagens() {
+    const chat = chatAtivoSelecionado;
+    const { data } = await supabaseClient.from('chat_mensagens').select('*').eq('chat_id', chat.id).order('created_at', { ascending: false }).limit(100);
+    if (chat !== chatAtivoSelecionado) return;
+    const box = $('boxMensagensChat'); if (!box) return;
+    box.innerHTML = ''; (data || []).reverse().forEach(m => adicionarMensagemNaTela(m));
+    rolarChatParaFim(); marcarLidoAtivo();
+}
+
+async function atualizarAreaLeitura() {
+    const chat = chatAtivoSelecionado, area = $('areaLeitura'); if (!chat || !area) return;
+    let capa = '', titulo = 'Nenhum livro definido para este grupo', total = 100;
+    if (chat.livro_atual_id) {
+        const l = (acervoCompleto || []).find(x => mesmoId(x.id, chat.livro_atual_id));
+        if (l) { capa = l.capa_url || l.capaUrl || ''; titulo = l.titulo_principal || l.tituloPrincipal || 'Sem título'; total = parseInt(String(l.numero_paginas || '').replace(/\D/g, ''), 10) || 100; }
+    } else if (chat.livro_externo_titulo) {
+        capa = chat.livro_externo_capa || ''; titulo = chat.livro_externo_titulo; total = parseInt(chat.livro_externo_paginas, 10) || 100;
+    }
+    const [prog, mem] = await Promise.all([
+        supabaseClient.from('progresso_leitura').select('*').eq('chat_id', chat.id),
+        supabaseClient.from('chat_membros').select('usuarios_sistema(id,nome)').eq('chat_id', chat.id)
+    ]);
+    if (chat !== chatAtivoSelecionado || !$('areaLeitura')) return;
+    const campo = $('inputMinhaPagina'), manter = campo && document.activeElement === campo ? campo.value : null;
+    const membros = (mem.data || []).map(m => m.usuarios_sistema).filter(Boolean);
+    area.innerHTML = `${capa ? `<img class="capa" src="${escaparHTML(capa)}" alt="" onerror="this.style.visibility='hidden'">` : '<div class="capa"><i class="fa-solid fa-book"></i></div>'}
+<div style="flex:1;min-width:0"><h6 style="font-size:1rem">Lendo: <span style="color:var(--primary-color)">${escaparHTML(titulo)}</span></h6>
+${membros.map(m => {
+        const p = (prog.data || []).find(x => mesmoId(x.usuario_id, m.id)), pg = parseInt(p?.pagina_atual, 10) || 0, pct = Math.min(100, Math.round(pg / total * 100)), eu = mesmoId(m.id, usuarioAtual.id);
+        return `<div class="leitor"><div class="leitor-top"><span><i class="ponto" data-uid="${Number(m.id)}"></i>${escaparHTML(m.nome)}${eu ? ' <span class="muted">(Você)</span>' : ''}</span><span class="muted">Pág. <b>${pg}</b> / ${total} (${pct}%)</span></div><div class="barra"><i style="width:${pct}%"></i></div>${eu ? `<div class="leitor-form"><label for="inputMinhaPagina" class="muted">Sua página:</label><input type="number" id="inputMinhaPagina" min="0" max="${total}" value="${pg}"><button class="btn btn-primary btn-sm" onclick="atualizarMeuProgresso(${total})"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></div>` : ''}</div>`;
+    }).join('')}</div>`;
+    if (manter !== null) { const n = $('inputMinhaPagina'); if (n) { n.value = manter; n.focus(); } }
+    pintarOnline();
+}
+
+// ---------- Mensagens ----------
+function adicionarMensagemNaTela(m) {
+    const box = $('boxMensagensChat'); if (!box || !chatAtivoSelecionado || !mesmoId(m.chat_id, chatAtivoSelecionado.id)) return null;
+    if (m.id != null && box.querySelector(`[data-id="${CSS.escape(String(m.id))}"]`)) return null;
+    const meu = mesmoId(m.usuario_id, usuarioAtual.id), perto = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+    const hora = new Date(m.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const d = document.createElement('div');
+    d.className = 'msg' + (meu ? ' msg-mine' : ''); d.dataset.id = m.id ?? ''; d.dataset.t = m.created_at || '';
+    d.innerHTML = `<small>${meu ? 'Você' : escaparHTML(m.nome_usuario || 'Usuário')} • ${hora}</small><div>${escaparHTML(m.texto)}</div>`;
+    box.appendChild(d); if (meu || perto) rolarChatParaFim();
+    return d;
+}
+
+async function enviarMensagemChat() {
+    const input = $('txtMensagemChat'); if (!input || !chatAtivoSelecionado || !logado()) return;
+    const texto = input.value.trim(); if (!texto) return;
+    const chatId = chatAtivoSelecionado.id; input.value = ''; input.focus();
+    const el = adicionarMensagemNaTela({ id: 'tmp' + Date.now() + Math.random(), chat_id: chatId, usuario_id: usuarioAtual.id, nome_usuario: usuarioAtual.nome, texto, created_at: 'tmp' });
+    el?.classList.add('pendente');
+    const { data, error } = await supabaseClient.from('chat_mensagens')
+        .insert([{ chat_id: chatId, usuario_id: usuarioAtual.id, nome_usuario: usuarioAtual.nome, texto }]).select().single();
+    if (error || !data) {
+        console.error('Erro ao enviar mensagem:', error);
+        if (el) { el.classList.remove('pendente'); el.classList.add('msg-erro'); el.querySelector('div').textContent = texto + '  ⚠ Falha ao enviar — clique para reenviar'; el.onclick = () => { el.remove(); input.value = texto; enviarMensagemChat(); }; }
         return;
     }
-
-    if (escutaChatChannel) {
-        try {
-            supabaseClient.removeChannel(escutaChatChannel);
-        } catch (e) {
-            console.warn('Erro ao remover canal anterior:', e);
-        }
-    }
-
-    escutaChatChannel = supabaseClient
-        .channel('public:chat_mensagens')
-        .on(
-            'postgres_changes',
-            {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'chat_mensagens'
-            },
-            payload => {
-                const novaMsg = payload.new;
-
-                if (chatAtivoSelecionado && Number(novaMsg.chat_id) === Number(chatAtivoSelecionado.id)) {
-                    if (!usuarioAtual || Number(novaMsg.usuario_id) !== Number(usuarioAtual.id)) {
-                        adicionarMensagemNaTela(novaMsg);
-                    }
-                }
-
-                if (usuarioAtual && Number(novaMsg.usuario_id) !== Number(usuarioAtual.id)) {
-                    exibirNotificacaoMensagem(
-                        novaMsg.nome_usuario || 'Membro do Grupo',
-                        novaMsg.texto
-                    );
-                }
-            }
-        )
-        .subscribe(status => {
-            console.log('Status realtime do chat:', status);
-        });
+    const real = $('boxMensagensChat')?.querySelector(`[data-id="${CSS.escape(String(data.id))}"]`);
+    if (real && real !== el) el?.remove();
+    else if (el) { el.classList.remove('pendente'); el.dataset.id = data.id; el.dataset.t = data.created_at; }
+    marcarLidoAtivo();
 }
 
-// ==========================================
-// CARREGAMENTO DE CHATS E PERFIL
-// ==========================================
+// ---------- Emojis, livro e progresso ----------
+function alternarPickerEmoji() { $('emojiPickerContainer')?.classList.toggle('aberto'); }
+function inserirEmoji(e) { const i = $('txtMensagemChat'); if (i) { i.value += e; i.focus(); } }
 
+async function salvarLivroLeituraConjunta() {
+    if (!chatAtivoSelecionado) return; let d;
+    if (modoOrigemLivro === 'acervo') {
+        const id = parseInt($('selectLivroAcervoChat')?.value, 10); if (!id) return alert('Selecione um livro do acervo.');
+        d = { livro_atual_id: id, livro_externo_titulo: null, livro_externo_capa: null, livro_externo_paginas: null };
+    } else {
+        const t = $('txtLivroForaTitulo')?.value.trim(); if (!t) return alert('Informe o título do livro.');
+        d = { livro_atual_id: null, livro_externo_titulo: t, livro_externo_capa: $('txtLivroForaCapa')?.value.trim() || null, livro_externo_paginas: parseInt($('numLivroForaPaginas')?.value, 10) || 100 };
+    }
+    const { data, error } = await supabaseClient.from('chats_grupos').update(d).eq('id', chatAtivoSelecionado.id).select('*').single();
+    if (error) return alert('Erro ao salvar livro: ' + error.message);
+    aoAtualizarChat(data); fecharModal('modalSelecionarLivroChat');
+}
+
+async function atualizarMeuProgresso(total) {
+    const inp = $('inputMinhaPagina'); if (!inp || !chatAtivoSelecionado || !logado()) return;
+    const max = parseInt(total, 10) || 100, pag = Math.max(0, Math.min(parseInt(inp.value, 10) || 0, max));
+    const { error } = await supabaseClient.from('progresso_leitura').upsert([{ chat_id: Number(chatAtivoSelecionado.id), usuario_id: Number(usuarioAtual.id), pagina_atual: pag, total_paginas: max, updated_at: new Date().toISOString() }], { onConflict: 'chat_id,usuario_id' });
+    if (error) return alert('Erro ao salvar progresso: ' + error.message);
+    atualizarAreaLeitura();
+}
+
+// ---------- Perfil (favoritos e reservas) ----------
 async function carregarPerfilUsuario() {
-    await carregarListaChats();
-
     const divPerfil = document.getElementById('tab-perfil');
     if (!divPerfil) return;
 
@@ -200,443 +357,8 @@ async function carregarPerfilUsuario() {
     }
 }
 
-async function carregarListaChats() {
-    const containerLista = document.getElementById('listaConversas');
-    if (!containerLista) return;
 
-    if (!usuarioAtual || !usuarioAtual.id || usuarioAtual.nome === 'Visitante (Público)') {
-        containerLista.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Faça login para utilizar o chat.</p>';
-        return;
-    }
-
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        containerLista.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Banco de dados desconectado.</p>';
-        return;
-    }
-
-    try {
-        const { data: membrosData, error: membrosError } = await supabaseClient
-            .from('chat_membros')
-            .select('chat_id')
-            .eq('usuario_id', usuarioAtual.id);
-
-        if (membrosError) throw membrosError;
-
-        if (!membrosData || membrosData.length === 0) {
-            listaChatsUsuario = [];
-            containerLista.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Você não possui conversas ativas.</p>';
-            return;
-        }
-
-        const chatIds = membrosData.map(m => m.chat_id);
-
-        const { data: chats, error: chatsError } = await supabaseClient
-            .from('chats_grupos')
-            .select('*')
-            .in('id', chatIds)
-            .order('created_at', { ascending: false });
-
-        if (chatsError) throw chatsError;
-
-        listaChatsUsuario = chats || [];
-        containerLista.innerHTML = '';
-
-        listaChatsUsuario.forEach(c => {
-            const isGrupo = c.tipo === 'grupo';
-            const icon = isGrupo ? 'fa-users' : 'fa-user';
-            const isActive = chatAtivoSelecionado && Number(chatAtivoSelecionado.id) === Number(c.id);
-
-            const btn = document.createElement('div');
-            btn.className = `chat-item ${isActive ? 'active' : ''}`;
-            btn.style.cssText = `
-                padding: 12px 14px;
-                border-radius: 8px;
-                background: ${isActive ? 'var(--primary-color)' : 'var(--bg-tertiary)'};
-                color: ${isActive ? '#fff' : 'var(--text-main)'};
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-size: 0.9rem;
-                font-weight: 500;
-                transition: all 0.2s ease;
-            `;
-
-            btn.innerHTML = `
-                <i class="fa-solid ${icon}"></i>
-                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">
-                    ${escaparHTML(c.nome)}
-                </span>
-            `;
-
-            btn.onclick = () => selecionarChat(c);
-            containerLista.appendChild(btn);
-        });
-
-    } catch (err) {
-        console.error("Erro ao carregar lista de chats:", err);
-        containerLista.innerHTML = `<p style="color:var(--accent-red); font-size:0.85rem; padding:10px;">Erro ao carregar conversas.</p>`;
-    }
-}
-
-// ==========================================
-// SELECIONAR CHAT
-// ==========================================
-
-async function selecionarChat(chat) {
-    if (!chat) return;
-    chatAtivoSelecionado = chat;
-    await carregarListaChats();
-    await renderizarPainelChatAtivo();
-}
-
-// ==========================================
-// PAINEL DO CHAT & PROGRESSÃO POR PÁGINA
-// ==========================================
-
-async function renderizarPainelChatAtivo() {
-    const container = document.getElementById('painelChatAtivo');
-    if (!container || !chatAtivoSelecionado) return;
-
-    let capaLivro = '';
-    let tituloLivro = 'Nenhum livro definido para este grupo';
-    let totalPaginasLivro = 100;
-
-    if (chatAtivoSelecionado.livro_atual_id) {
-        const livroAcervo = Array.isArray(acervoCompleto)
-            ? acervoCompleto.find(l => Number(l.id) === Number(chatAtivoSelecionado.livro_atual_id))
-            : null;
-
-        if (livroAcervo) {
-            capaLivro = livroAcervo.capa_url || livro.capaUrl || '';
-            tituloLivro = livroAcervo.titulo_principal || livroAcervo.tituloPrincipal || 'Sem título';
-            const paginasDigitos = String(livroAcervo.numero_paginas || '').replace(/\D/g, '');
-            totalPaginasLivro = parseInt(paginasDigitos, 10) || 100;
-        }
-    } else if (chatAtivoSelecionado.livro_externo_titulo) {
-        capaLivro = chatAtivoSelecionado.livro_externo_capa || '';
-        tituloLivro = chatAtivoSelecionado.livro_externo_titulo;
-        totalPaginasLivro = parseInt(chatAtivoSelecionado.livro_externo_paginas, 10) || 100;
-    }
-
-    let progressos = [];
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        const { data } = await supabaseClient
-            .from('progresso_leitura')
-            .select('*')
-            .eq('chat_id', chatAtivoSelecionado.id);
-        progressos = data || [];
-    }
-
-    let membrosInfos = [];
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        const { data: membrosData } = await supabaseClient
-            .from('chat_membros')
-            .select(`usuario_id, usuarios_sistema(id, nome, email)`)
-            .eq('chat_id', chatAtivoSelecionado.id);
-        membrosInfos = (membrosData || []).map(m => m.usuarios_sistema).filter(Boolean);
-    }
-
-    let htmlProgressos = '';
-    membrosInfos.forEach(membro => {
-        const prog = progressos.find(p => Number(p.usuario_id) === Number(membro.id)) || {
-            pagina_atual: 0,
-            total_paginas: totalPaginasLivro
-        };
-
-        const paginaAtual = parseInt(prog.pagina_atual, 10) || 0;
-        const totalPaginas = totalPaginasLivro > 0 ? totalPaginasLivro : 100;
-        const pct = Math.min(100, Math.round((paginaAtual / totalPaginas) * 100));
-        const isMe = usuarioAtual && Number(membro.id) === Number(usuarioAtual.id);
-
-        htmlProgressos += `
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; margin-bottom: 8px;">
-                    <span style="color: var(--text-main); font-weight: 600;">
-                        <i class="fa-solid fa-circle-user" style="margin-right: 6px; color: var(--primary-color);"></i>
-                        ${escaparHTML(membro.nome)} ${isMe ? '<span style="opacity:0.7; font-weight:normal;">(Você)</span>' : ''}
-                    </span>
-                    <span style="font-size:0.82rem; color: var(--text-muted);">
-                        Pág. <strong style="color:var(--text-main);">${paginaAtual}</strong> / ${totalPaginas} 
-                        (<strong style="color:var(--primary-color);">${pct}%</strong>)
-                    </span>
-                </div>
-
-                <div style="width:100%; background: rgba(0,0,0,0.3); height:10px; border-radius:10px; overflow:hidden;">
-                    <div style="width:${pct}%; background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%); height:100%; border-radius:10px; transition: width 0.4s ease-in-out;"></div>
-                </div>
-
-                ${isMe ? `
-                    <div style="display:flex; gap:10px; align-items:center; margin-top:12px;">
-                        <label style="font-size:0.8rem; color:var(--text-muted);">Sua página atual:</label>
-                        <input type="number" id="inputMinhaPagina" value="${paginaAtual}" min="0" max="${totalPaginas}" style="width:90px; padding:6px 10px; font-size:0.85rem; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; text-align:center;">
-                        <button class="btn btn-primary" style="padding:6px 14px; font-size:0.8rem; border-radius:6px;" onclick="atualizarMeuProgresso(${totalPaginas})">
-                            <i class="fa-solid fa-floppy-disk"></i> Salvar
-                        </button>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    });
-
-    const capaHtml = capaLivro
-        ? `<img src="${escaparHTML(capaLivro)}" style="width:85px; height:125px; object-fit:cover; border-radius:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); flex-shrink: 0;" onerror="this.onerror=null; this.parentNode.innerHTML='<div style=\\'width:85px; height:125px; background:var(--bg-tertiary); display:flex; align-items:center; justify-content:center; border-radius:8px; flex-shrink: 0;\\'><i class=\\'fa-solid fa-book fa-2x\\'></i></div>';">`
-        : `<div style="width:85px; height:125px; background:var(--bg-tertiary); display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border-color); color:var(--text-muted); flex-shrink: 0;"><i class="fa-solid fa-book" style="font-size:2rem;"></i></div>`;
-
-    let msgs = [];
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        const { data } = await supabaseClient
-            .from('chat_mensagens')
-            .select('*')
-            .eq('chat_id', chatAtivoSelecionado.id)
-            .order('created_at', { ascending: true });
-        msgs = data || [];
-    }
-
-    container.innerHTML = `
-        <div style="padding:16px 20px; background:var(--bg-card); border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
-            <strong style="font-size:1.05rem; color:var(--text-main);">
-                <i class="fa-solid ${chatAtivoSelecionado.tipo === 'grupo' ? 'fa-users' : 'fa-user'}" style="margin-right:8px; color:var(--primary-color);"></i>
-                ${escaparHTML(chatAtivoSelecionado.nome)}
-            </strong>
-            <button class="btn btn-outline" style="font-size:0.85rem; padding:8px 14px; border-radius:6px;" onclick="abrirModalSelecionarLivro()">
-                <i class="fa-solid fa-book-bookmark"></i> Definir Livro
-            </button>
-        </div>
-
-        <div style="background: var(--bg-secondary); padding: 18px 20px; border-bottom: 1px solid var(--border-color); display: flex; gap: 20px; align-items: flex-start; max-height: 260px; overflow-y: auto;">
-            ${capaHtml}
-            <div style="flex:1;">
-                <h6 style="font-size:1rem; margin-bottom:12px; color:var(--text-main); font-weight:600;">
-                    Lendo: <span style="color:var(--primary-color);">${escaparHTML(tituloLivro)}</span>
-                </h6>
-                ${htmlProgressos}
-            </div>
-        </div>
-
-        <div id="boxMensagensChat" style="flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; min-height:260px; background:var(--bg-primary);"></div>
-
-        <div id="emojiPickerContainer" style="display:none; padding:12px; background:var(--bg-secondary); border-top:1px solid var(--border-color); flex-wrap:wrap; gap:8px; max-height:130px; overflow-y:auto;">
-            ${['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😋','😜','🤪','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','😣','😫','😩','🥺','😢','😭','😤','😠','😡','🤯','😳','😱','🤗','🤔','🤭','🤫','😶','😐','😑','😬','🙄','😯','🥱','😴','😵','🤐','🤢','🤧','😷','🤠','🥳','🤡','💩','👻','💀','👽','🤖','🎃','😺','😸','😹','😻','👋','🤚','🖐','✋','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝','👍','👎','✊','👊','👏','🙌','👐','🤲','🤝','🙏','💪','🧠','👀','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣','💕','💞','💓','💗','💖','💘','💝','📚','📖','🔖','📕','📗','📘','📙'].map(emoji => 
-                `<span style="font-size:1.3rem; cursor:pointer; padding:4px; transition:transform 0.1s;" onclick="inserirEmoji('${emoji}')">${emoji}</span>`
-            ).join('')}
-        </div>
-
-        <div style="padding:14px 18px; border-top:1px solid var(--border-color); display:flex; gap:10px; background:var(--bg-card); align-items:center;">
-            <button type="button" class="btn btn-outline" style="padding:10px 14px; font-size:1.1rem; cursor:pointer;" onclick="alternarPickerEmoji()" title="Inserir Emoji">😊</button>
-            <input type="text" id="txtMensagemChat" placeholder="Digite sua mensagem..." style="flex:1; padding:12px 16px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-main); font-size:0.92rem;" onkeypress="if(event.key==='Enter') enviarMensagemChat()">
-            <button class="btn btn-primary" style="padding:12px 18px; border-radius:8px;" onclick="enviarMensagemChat()"><i class="fa-solid fa-paper-plane"></i></button>
-        </div>
-    `;
-
-    const boxMsgs = document.getElementById('boxMensagensChat');
-    if (!boxMsgs) return;
-    boxMsgs.innerHTML = '';
-    msgs.forEach(m => adicionarMensagemNaTela(m));
-    rolarChatParaFim();
-}
-
-// ==========================================
-// EMOJIS & INTERAÇÃO
-// ==========================================
-
-function alternarPickerEmoji() {
-    const container = document.getElementById('emojiPickerContainer');
-    if (container) {
-        container.style.display = (container.style.display === 'none' || container.style.display === '') ? 'flex' : 'none';
-    }
-}
-
-function inserirEmoji(emoji) {
-    const input = document.getElementById('txtMensagemChat');
-    if (input) {
-        input.value += emoji;
-        input.focus();
-    }
-}
-
-// ==========================================
-// SALVAR LIVRO COM PERSISTÊNCIA COMPLETA
-// ==========================================
-
-async function salvarLivroLeituraConjunta() {
-    if (!chatAtivoSelecionado) return;
-    let dadosAtualizacao = {};
-
-    if (modoOrigemLivro === 'acervo') {
-        const livroId = parseInt(document.getElementById('selectLivroAcervoChat')?.value, 10);
-        if (!livroId) {
-            alert('Selecione um livro do acervo.');
-            return;
-        }
-        dadosAtualizacao = {
-            livro_atual_id: livroId,
-            livro_externo_titulo: null,
-            livro_externo_capa: null,
-            livro_externo_paginas: null
-        };
-    } else {
-        const titulo = document.getElementById('txtLivroForaTitulo')?.value.trim();
-        const capa = document.getElementById('txtLivroForaCapa')?.value.trim();
-        const paginas = parseInt(document.getElementById('numLivroForaPaginas')?.value, 10) || 100;
-
-        if (!titulo) {
-            alert('Informe o título do livro.');
-            return;
-        }
-
-        dadosAtualizacao = {
-            livro_atual_id: null,
-            livro_externo_titulo: titulo,
-            livro_externo_capa: capa,
-            livro_externo_paginas: paginas
-        };
-    }
-
-    try {
-        const { data: chatAtualizado, error } = await supabaseClient
-            .from('chats_grupos')
-            .update(dadosAtualizacao)
-            .eq('id', chatAtivoSelecionado.id)
-            .select('*')
-            .single();
-
-        if (error) throw error;
-
-        if (chatAtualizado) {
-            chatAtivoSelecionado = chatAtualizado;
-            const idx = listaChatsUsuario.findIndex(c => Number(c.id) === Number(chatAtualizado.id));
-            if (idx !== -1) {
-                listaChatsUsuario[idx] = chatAtualizado;
-            }
-        }
-
-        fecharModal('modalSelecionarLivroChat');
-        await renderizarPainelChatAtivo();
-        alert('Livro definido com sucesso!');
-    } catch (err) {
-        console.error('Erro ao salvar livro:', err);
-        alert('Erro ao salvar livro: ' + (err.message || 'Falha na atualização.'));
-    }
-}
-
-// ==========================================
-// SALVAR PROGRESSO
-// ==========================================
-
-async function atualizarMeuProgresso(total) {
-    const pagInput = document.getElementById('inputMinhaPagina');
-    if (!pagInput || !chatAtivoSelecionado || !usuarioAtual) return;
-
-    let novaPag = parseInt(pagInput.value, 10) || 0;
-    const totalNumerico = parseInt(total, 10) || 100;
-    novaPag = Math.max(0, Math.min(novaPag, totalNumerico));
-
-    try {
-        const payload = {
-            chat_id: Number(chatAtivoSelecionado.id),
-            usuario_id: Number(usuarioAtual.id),
-            pagina_atual: novaPag,
-            total_paginas: totalNumerico,
-            updated_at: new Date().toISOString()
-        };
-
-        const { error } = await supabaseClient
-            .from('progresso_leitura')
-            .upsert([payload], { onConflict: 'chat_id,usuario_id' });
-
-        if (error) {
-            console.error('Erro Supabase ao salvar progresso:', error);
-            alert('Erro ao salvar progresso: ' + error.message);
-            return;
-        }
-
-        await renderizarPainelChatAtivo();
-    } catch (err) {
-        console.error('Falha ao atualizar progresso:', err);
-        alert('Erro ao atualizar progresso de leitura.');
-    }
-}
-
-// ==========================================
-// MENSAGENS E ENVIO
-// ==========================================
-
-function adicionarMensagemNaTela(msg) {
-    const boxMsgs = document.getElementById('boxMensagensChat');
-    if (!boxMsgs) return;
-
-    const isMine = usuarioAtual && Number(msg.usuario_id) === Number(usuarioAtual.id);
-    const hora = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    const msgDiv = document.createElement('div');
-    msgDiv.style.cssText = `
-        max-width: 70%;
-        align-self: ${isMine ? 'flex-end' : 'flex-start'};
-        background: ${isMine ? 'var(--primary-color)' : 'var(--bg-tertiary)'};
-        color: ${isMine ? '#fff' : 'var(--text-main)'};
-        padding: 10px 14px;
-        border-radius: 10px;
-        font-size: 0.88rem;
-        word-break: break-word;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-    `;
-
-    msgDiv.innerHTML = `
-        <div style="font-size:0.72rem; opacity:0.8; margin-bottom:4px; font-weight:600;">
-            ${isMine ? 'Você' : escaparHTML(msg.nome_usuario || 'Usuário')} • ${hora}
-        </div>
-        <div>${escaparHTML(msg.texto)}</div>
-    `;
-
-    boxMsgs.appendChild(msgDiv);
-    rolarChatParaFim();
-}
-
-async function enviarMensagemChat() {
-    const input = document.getElementById('txtMensagemChat');
-    if (!input || !chatAtivoSelecionado || !usuarioAtual || !usuarioAtual.id) return;
-
-    const texto = input.value.trim();
-    if (!texto) return;
-
-    const novaMensagemObj = {
-        chat_id: chatAtivoSelecionado.id,
-        usuario_id: usuarioAtual.id,
-        nome_usuario: usuarioAtual.nome,
-        texto: texto,
-        created_at: new Date().toISOString()
-    };
-
-    adicionarMensagemNaTela(novaMensagemObj);
-    input.value = '';
-
-    try {
-        const { error } = await supabaseClient
-            .from('chat_mensagens')
-            .insert([{
-                chat_id: novaMensagemObj.chat_id,
-                usuario_id: novaMensagemObj.usuario_id,
-                nome_usuario: novaMensagemObj.nome_usuario,
-                texto: novaMensagemObj.texto
-            }]);
-
-        if (error) throw error;
-    } catch (err) {
-        console.error('Erro ao enviar mensagem:', err);
-        alert('Erro ao enviar mensagem: ' + (err.message || 'Falha na conexão.'));
-    } finally {
-        input.focus();
-    }
-}
-
-function rolarChatParaFim() {
-    const box = document.getElementById('boxMensagensChat');
-    if (box) {
-        box.scrollTop = box.scrollHeight;
-    }
-}
-
+// ---------- Modais: grupos, conversas diretas e livro ----------
 function abrirModalNovoGrupo() {
     const container = document.getElementById('listaMembrosParaGrupo');
     if (!container) return;
@@ -691,7 +413,7 @@ async function confirmarCriacaoGrupo() {
         if (grupoError) throw grupoError;
 
         const registrosMembros = idsUnicos.map(uid => ({ chat_id: novoGrupo.id, usuario_id: uid }));
-        await supabaseClient.from('chat_membros').insert(registrosMembros);
+        { const { error: e2 } = await supabaseClient.from('chat_membros').insert(registrosMembros); if (e2) throw e2; }
 
         fecharModal('modalNovoGrupo');
         if (inputNome) inputNome.value = '';
@@ -809,17 +531,11 @@ function alternarOrigemLivroChat(origem) {
     if (boxFora) boxFora.style.display = origem === 'fora' ? 'block' : 'none';
 }
 
+
+// ---------- Inicialização ----------
 document.addEventListener('DOMContentLoaded', () => {
-    try {
-        if (typeof atualizarInterfacePermissoes === 'function') atualizarInterfacePermissoes();
-        if (typeof carregarAcervo === 'function') carregarAcervo();
-        if (typeof carregarUsuarios === 'function') {
-            carregarUsuarios().then(() => carregarPerfilUsuario());
-        } else {
-            carregarPerfilUsuario();
-        }
-        inicializarEscutaRealtimeMensagens();
-    } catch (err) {
-        console.error('Erro na inicialização:', err);
-    }
+    (window.appReady || Promise.resolve()).then(async () => { await carregarListaChats(); if ($('tab-perfil')) carregarPerfilUsuario(); });
 });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { marcarLidoAtivo(); sincronizar(); } });
+window.addEventListener('online', () => { assinar(); if (canalSala && chatAtivoSelecionado) entrarNaSala(chatAtivoSelecionado); });
+window.addEventListener('focus', marcarLidoAtivo);

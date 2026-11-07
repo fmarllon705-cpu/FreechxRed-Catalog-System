@@ -30,16 +30,67 @@ let livroCIPSelecionado = null;
 // ==========================================
 // 2. INICIALIZAÇÃO DA PÁGINA
 // ==========================================
-window.onload = function () {
+const chamar = (fn, ...args) => (typeof window[fn] === 'function' ? window[fn](...args) : undefined);
+
+function escaparHTML(v) {
+    return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+}
+
+function iniciarTema() {
+    let salvo = null;
+    try { salvo = localStorage.getItem('tema'); } catch (_) {}
+    if (salvo) document.documentElement.dataset.theme = salvo;
+    const painel = document.querySelector('.user-panel');
+    if (!painel || document.getElementById('btnTema')) return;
+    const btn = document.createElement('button');
+    btn.id = 'btnTema'; btn.type = 'button'; btn.className = 'btn-switch-user'; btn.title = 'Alternar tema';
+    btn.innerHTML = '<i class="fa-solid fa-circle-half-stroke"></i>';
+    btn.onclick = () => {
+        const atual = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const novo = atual === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = novo;
+        try { localStorage.setItem('tema', novo); } catch (_) {}
+    };
+    painel.appendChild(btn);
+}
+
+function garantirModaisLogin() {
+    if (document.getElementById('modalLogin')) return;
+    document.body.insertAdjacentHTML('beforeend', `
+<div class="modal-overlay" id="modalLogin"><div class="modal-box"><span class="close-modal" onclick="fecharModalLogin()">&times;</span>
+<h3><i class="fa-solid fa-user-lock"></i> Autenticação de Usuário</h3>
+<form id="formLoginModal" onsubmit="realizarLogin(event)" class="form-grid" style="margin-top:12px">
+<div class="form-group full-width"><label for="loginEmail">E-mail ou Usuário</label><input id="loginEmail" required autocomplete="username"></div>
+<div class="form-group full-width"><label for="loginSenha">Senha</label><input type="password" id="loginSenha" required autocomplete="current-password"></div>
+<div class="btn-group full-width" style="flex-direction:column"><button class="btn btn-primary" type="submit">Entrar</button>
+<button type="button" class="btn btn-outline" onclick="entrarComoVisitante()">Continuar como Visitante</button>
+<button type="button" class="btn btn-outline" onclick="abrirModalPreCadastro()">Não tem conta? Faça seu pré-registo</button></div></form></div></div>
+<div class="modal-overlay" id="modalPreCadastro"><div class="modal-box"><span class="close-modal" onclick="fecharModalPreCadastro()">&times;</span>
+<h3><i class="fa-solid fa-id-card"></i> Pré-registo Online</h3>
+<form id="formPreCadastro" onsubmit="realizarPreCadastro(event)" class="form-grid" style="margin-top:12px">
+<div class="form-group full-width"><label for="preNome">Nome Completo</label><input id="preNome" required></div>
+<div class="form-group full-width"><label for="preUsuario">Nome de Usuário</label><input id="preUsuario" required></div>
+<div class="form-group full-width"><label for="preEmail">E-mail</label><input type="email" id="preEmail" required></div>
+<div class="form-group full-width"><label for="preSenha">Senha</label><input type="password" id="preSenha" required autocomplete="new-password"></div>
+<button class="btn btn-primary full-width" type="submit">Concluir Pré-registo</button></form></div></div>`);
+}
+
+function init() {
+    const cargo = (usuarioAtual.cargo || 'usuario').toLowerCase();
+    const logado = usuarioAtual.nome !== 'Visitante (Público)';
+    const exigido = document.body.dataset.acesso;
+    const ok = !exigido || (exigido === 'logado' && logado) || (exigido === 'staff' && ['bibliotecario', 'estagiario'].includes(cargo)) || (exigido === 'admin' && cargo === 'bibliotecario');
+    if (!ok) { location.replace('index.html'); return; }
+    iniciarTema();
+    garantirModaisLogin();
     atualizarInterfacePermissoes();
-    carregarAcervo();
-    carregarUsuarios();
-    carregarEmprestimos();
-    carregarReservas();
-    carregarResenhas();
-    carregarFavoritos();
-    alternarCamposPorTipoMaterial();
-};
+    window.appReady = Promise.all([carregarAcervo(), ...['carregarUsuarios', 'carregarEmprestimos', 'carregarReservas', 'carregarResenhas', 'carregarFavoritos'].map(f => chamar(f))])
+        .then(() => { chamar('alternarCamposPorTipoMaterial'); chamar('populaSelectsEmprestimo'); filtrarAcervoAgora(); })
+        .catch(e => console.error('Falha na inicialização:', e));
+}
+document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active')); });
+document.addEventListener('click', e => { if (e.target.classList?.contains('modal-overlay')) e.target.classList.remove('active'); });
 
 // ==========================================
 // 3. GERENCIAMENTO DE PERMISSÕES E INTERFACE
@@ -74,7 +125,7 @@ function atualizarInterfacePermissoes() {
             btnLoginHeader.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Entrar / Login';
             btnLoginHeader.onclick = abrirModalLogin;
         } else {
-            btnLoginHeader.innerHTML = `<i class="fa-solid fa-right-from-bracket"></i> Sair (${usuarioAtual.nome.split(' ')[0]})`;
+            btnLoginHeader.innerHTML = `<i class="fa-solid fa-right-from-bracket"></i> Sair (${escaparHTML(usuarioAtual.nome.split(' ')[0])})`;
             btnLoginHeader.onclick = fazerLogout;
         }
     }
@@ -113,7 +164,7 @@ function trocarAba(abaId) {
 
     abas.forEach(aba => {
         aba.classList.remove('active');
-        if (aba.id === `tab-${abaId}` || aba.id === abaId) {
+        if (aba.id === `tab-${escaparHTML(abaId)}` || aba.id === abaId) {
             aba.classList.add('active');
         }
     });
@@ -152,7 +203,8 @@ function fecharModalLogin() {
 async function realizarLogin(e) {
     if (e) e.preventDefault();
     const loginInput = document.getElementById('loginEmail').value.trim();
-    const senhaInput = document.getElementById('loginSenha').value.trim();
+    const senhaInput = document.getElementById('loginSenha').value;
+    const seguro = loginInput.replace(/[,()*]/g, '');
 
     if (!loginInput || !senhaInput) {
         alert('Por favor, preencha as credenciais.');
@@ -164,7 +216,7 @@ async function realizarLogin(e) {
             const { data, error } = await supabaseClient
                 .from('usuarios_sistema')
                 .select('*')
-                .or(`email.eq.${loginInput},usuario.eq.${loginInput},nome.eq.${loginInput}`)
+                .or(`email.eq.${seguro},usuario.eq.${seguro},nome.eq.${seguro}`)
                 .eq('senha', senhaInput);
 
             if (!error && data && data.length > 0) {
@@ -190,7 +242,8 @@ async function realizarLogin(e) {
         (u.email === loginInput || u.usuario === loginInput || u.nome === loginInput) && u.senha === senhaInput
     );
     if (localUser) {
-        usuarioAtual = localUser;
+        const { senha, ...semSenha } = localUser;
+        usuarioAtual = semSenha;
         finalizarLoginSucesso();
     } else {
         alert('Usuário ou senha incorretos.');
@@ -244,19 +297,15 @@ async function carregarAcervo() {
     const acervoAtivo = acervoCompleto.filter(l => !l.em_lixeira);
     renderizarTabelaAcervo(acervoAtivo);
     renderizarCarrosseis(acervoAtivo);
-    renderizarLixeira();
-    populaSelectsEmprestimo();
+    chamar('renderizarLixeira');
+    chamar('populaSelectsEmprestimo');
 
-    if (typeof popularSelectEtiquetas === 'function') {
-        popularSelectEtiquetas();
-    }
+    chamar('popularSelectEtiquetas');
 
     // CORREÇÃO: Verifica se veio parâmetro de edição na URL após carregar o acervo
     const urlParams = new URLSearchParams(window.location.search);
     const idEditar = urlParams.get('editar');
-    if (idEditar && typeof editarLivro === 'function') {
-        editarLivro(idEditar);
-    }
+    if (idEditar) chamar('editarLivro', idEditar);
 }
 
 function renderizarTabelaAcervo(lista) {
@@ -278,7 +327,7 @@ function renderizarTabelaAcervo(lista) {
 
         const capaSrc = livro.capa_url || livro.capaUrl;
         const capaHtml = (capaSrc && capaSrc.trim() !== '')
-            ? `<img src="${capaSrc}" alt="${livro.titulo_principal || 'Capa'}" class="acervo-cover-img" onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\\'acervo-cover-placeholder\\'><i class=\\'fa-solid fa-book-bookmark\\'></i><span>Malo</span></div>';">`
+            ? `<img loading="lazy" src="${escaparHTML(capaSrc)}" alt="${escaparHTML(livro.titulo_principal || 'Capa')}" class="acervo-cover-img" onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\\'acervo-cover-placeholder\\'><i class=\\'fa-solid fa-book-bookmark\\'></i></div>';">`
             : `<div class="acervo-cover-placeholder"><i class="fa-solid fa-book-bookmark"></i></div>`;
 
         const isFavorito = listaFavoritos.some(f => f.livro_id == livro.id && f.usuario_id == usuarioAtual.id);
@@ -300,12 +349,12 @@ function renderizarTabelaAcervo(lista) {
             <div class="acervo-card">
                 <div class="acervo-cover">${capaHtml}</div>
                 <div class="acervo-details">
-                    <div class="acervo-title">"${livro.titulo_principal || livro.tituloPrincipal || 'Sem título'}"</div>
-                    <div class="acervo-author">${livro.nome_pessoal || livro.nomePessoal || livro.autor_entidade || 'Autor não informado'}</div>
-                    <div class="acervo-meta"><strong>Tipo:</strong> ${livro.tipo_material || 'Livros'} — <strong>Tombo:</strong> <span style="color:#38bdf8; font-weight:bold;">${tomboDisplay}</span></div>
-                    <div class="acervo-meta"><strong>Localização (CDD/Cutter):</strong> <span class="acervo-location-code">${livro.classificacao_cdd || '000'} ${livro.codigo_autor_cutter || ''}</span> (${livro.codigo_livro || livro.numero_chamada_local || 'Sem Chamada'})</div>
-                    <div class="acervo-meta"><strong>Publicação:</strong> ${livro.local_publicacao || 'Belém'} : ${livro.editora || 'Malo'}, ${livro.data_publicacao || '2026'}.</div>
-                    <div class="acervo-meta"><strong>Assunto:</strong> ${livro.assunto || 'Trânsito'}</div>
+                    <div class="acervo-title">"${escaparHTML(livro.titulo_principal || livro.tituloPrincipal || 'Sem título')}"</div>
+                    <div class="acervo-author">${escaparHTML(livro.nome_pessoal || livro.nomePessoal || livro.autor_entidade || 'Autor não informado')}</div>
+                    <div class="acervo-meta"><strong>Tipo:</strong> ${escaparHTML(livro.tipo_material || 'Livros')} — <strong>Tombo:</strong> <span class="marc-code">${escaparHTML(tomboDisplay)}</span></div>
+                    <div class="acervo-meta"><strong>Localização (CDD/Cutter):</strong> <span class="acervo-location-code">${escaparHTML(livro.classificacao_cdd || '000')} ${escaparHTML(livro.codigo_autor_cutter || '')}</span> (${escaparHTML(livro.codigo_livro || livro.numero_chamada_local || 'Sem Chamada')})</div>
+                    <div class="acervo-meta"><strong>Publicação:</strong> ${escaparHTML(livro.local_publicacao || 's.l.')} : ${escaparHTML(livro.editora || 's.n.')}, ${escaparHTML(livro.data_publicacao || 's.d.')}.</div>
+                    <div class="acervo-meta"><strong>Assunto:</strong> ${escaparHTML(livro.assunto || '—')}</div>
                 </div>
 
                 <div class="acervo-actions">
@@ -343,39 +392,25 @@ function renderizarCarrosseis(lista) {
     const doacoes = lista.filter(l => (l.tipo_aquisicao || '').toLowerCase().includes('doaç') || (l.tipo_aquisicao || '').toLowerCase().includes('doacao'));
     const listaDoacao = doacoes.length > 0 ? doacoes : lista;
 
-    const criarCardCarrossel = (livro) => {
-        const capaSrc = livro.capa_url || livro.capaUrl;
-        const capaHtml = (capaSrc && capaSrc.trim() !== '')
-            ? `<img src="${capaSrc}" alt="Capa" style="width:100%; height:160px; object-fit:cover; border-radius:6px; margin-bottom:8px;">`
-            : `<div style="width:100%; height:160px; background:var(--bg-tertiary); display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:6px; margin-bottom:8px; color:var(--text-muted);"><i class="fa-solid fa-book" style="font-size:2rem; margin-bottom:4px;"></i><span style="font-size:0.75rem;">Malosystem</span></div>`;
-
-        return `
-            <div class="carrossel-card" style="min-width: 170px; max-width: 170px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                    ${capaHtml}
-                    <div style="font-weight: 600; font-size: 0.85rem; height: 38px; overflow: hidden; line-height: 1.2; margin-bottom: 4px;">${livro.titulo_principal || livro.tituloPrincipal}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${livro.nome_pessoal || livro.autor_entidade || 'Autor não informado'}</div>
-                </div>
-                <div style="margin-top:10px; display:flex; gap:4px;">
-                    <button class="btn btn-primary" style="font-size: 0.7rem; padding: 4px; flex:1;" onclick="solicitarReserva(${livro.id})"><i class="fa-solid fa-bookmark"></i> Reservar</button>
-                    <button class="btn btn-outline" style="font-size: 0.7rem; padding: 4px;" onclick="verCIP(${livro.id})"><i class="fa-solid fa-id-card"></i></button>
-                </div>
-            </div>
-        `;
+    const card = (l) => {
+        const capa = l.capa_url || l.capaUrl;
+        const img = capa ? `<img class="carrossel-cover" loading="lazy" src="${escaparHTML(capa)}" alt="">` : '<div class="carrossel-cover ph"><i class="fa-solid fa-book"></i></div>';
+        return `<div class="carrossel-card"><div>${img}<div class="carrossel-title">${escaparHTML(l.titulo_principal || l.tituloPrincipal || 'Sem título')}</div><div class="carrossel-author">${escaparHTML(l.nome_pessoal || l.autor_entidade || 'Autor não informado')}</div></div><div class="carrossel-actions"><button class="btn btn-primary btn-sm" onclick="solicitarReserva(${l.id})"><i class="fa-solid fa-bookmark"></i> Reservar</button><button class="btn btn-outline btn-sm" title="CIP / Resenhas" onclick="verCIP(${l.id})"><i class="fa-solid fa-id-card"></i></button></div></div>`;
     };
-
-    lista.forEach(livro => {
-        cPopulares.innerHTML += criarCardCarrossel(livro);
-        cRecentes.innerHTML += criarCardCarrossel(livro);
-    });
-
-    listaDoacao.forEach(livro => {
-        cDoacao.innerHTML += criarCardCarrossel(livro);
-    });
+    const favs = id => listaFavoritos.reduce((n, f) => n + (Number(f.livro_id) === Number(id)), 0);
+    cPopulares.innerHTML = [...lista].sort((a, b) => favs(b.id) - favs(a.id)).slice(0, 15).map(card).join('');
+    cRecentes.innerHTML = [...lista].sort((a, b) => b.id - a.id).slice(0, 15).map(card).join('');
+    cDoacao.innerHTML = doacoes.length ? doacoes.map(card).join('') : '<div class="muted" style="padding:15px">Nenhuma obra disponível para doação.</div>';
 }
 
+let _debounceBusca;
 function filtrarAcervo() {
-    const termo = document.getElementById('txtBusca').value.toLowerCase().trim();
+    clearTimeout(_debounceBusca);
+    _debounceBusca = setTimeout(filtrarAcervoAgora, 180);
+}
+
+function filtrarAcervoAgora() {
+    const termo = (document.getElementById('txtBusca')?.value ?? '').toLowerCase().trim();
     const acervoAtivo = acervoCompleto.filter(l => !l.em_lixeira);
     
     const filtrados = acervoAtivo.filter(l => {

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catalogação & Acervo • FreechxRed</title>
+    <meta name="color-scheme" content="light dark">
+    <title>Catalogação & Acervo • Venous</title>
 
     <!-- Fontes e Ícones -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,14 +16,14 @@
     <link rel="stylesheet" href="scripts/style.css">
 
     <!-- Dependências JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" defer></script>
     <script src="scripts/script.js" defer></script>
     <script src="scripts/registros.js" defer></script>
-    <script src="scripts/gestão.js" defer></script>
+    <script src="scripts/gestao.js" defer></script>
     <script src="scripts/chat.js" defer></script>
 </head>
-<body>
+<body data-acesso="staff">
 
 <!-- CABEÇALHO PRINCIPAL -->
 <header>
@@ -30,7 +31,7 @@
         <div class="logo-title">
             <div class="logo-box">
                 <div>
-                    <h1>FreechxRed</h1>
+                    <h1>Venous</h1>
                     <h3>Módulo Técnico de Catalogação MARC21</h3>
                 </div>
             </div>
@@ -156,7 +157,7 @@
                                 </div>
                                 <div class="form-group" id="grp_fonte_catalogacao">
                                     <label for="fonte_catalogacao">Fonte da Catalogação <span class="marc-code">(MARC 040)</span></label>
-                                    <input id="fonte_catalogacao" type="text" placeholder="Ex: FreechxRed">
+                                    <input id="fonte_catalogacao" type="text" placeholder="Ex: Venous">
                                 </div>
                                 <div class="form-group" id="grp_codigo_idioma">
                                     <label for="codigo_idioma">Código do Idioma <span class="marc-code">(MARC 041)</span></label>
@@ -441,7 +442,7 @@
 </main>
 
 <footer class="footer-bar">
-    <p>© 2026 • FreechxRed — Desenvolvido por malo. Todos os direitos reservados.</p>
+    <p>© 2026 • Venous — Desenvolvido por malo. Todos os direitos reservados.</p>
 </footer>
 
 </body>

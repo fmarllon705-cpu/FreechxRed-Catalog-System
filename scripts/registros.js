@@ -119,7 +119,7 @@ async function gerarFichaPDF() {
                 reader.onerror = error => reject(error);
             });
             const imgBackground = await getBase64(fileInput.files[0]);
-            doc.addImage(imgBackground, 'PNG', 0, 0, 210, 297);
+            doc.addImage(imgBackground, imgBackground.startsWith('data:image/png') ? 'PNG' : 'JPEG', 0, 0, 210, 297);
         } catch (e) {
             console.warn("Não foi possível carregar a imagem de fundo", e);
         }
@@ -308,7 +308,7 @@ async function salvarRegistroAcervo(event, isAtualizacao = false) {
         return isNaN(parsed) ? null : parsed;
     };
 
-    const idExistente = getValue('livro_id');
+    const idExistente = isAtualizacao ? getValue('livro_id') : null;
     const tituloPrincipal = getValue('titulo_principal') || getValue('tituloPrincipal') || getValue('txtTitulo');
     
     if (!tituloPrincipal) {
@@ -321,7 +321,8 @@ async function salvarRegistroAcervo(event, isAtualizacao = false) {
     let tomboFinal = getValue('numero_tombo');
     if (!tomboFinal) {
         const anoAtual = new Date().getFullYear();
-        let count = (Array.isArray(acervoCompleto) ? acervoCompleto.filter(l => !l.em_lixeira).length : 0) + 1;
+        const seqs = (acervoCompleto || []).map(l => parseInt(String(l.numero_tombo || '').split(';')[0], 10) || 0);
+        const count = Math.max(0, ...seqs) + 1;
         tomboFinal = `${String(count).padStart(7, '0')}; ${anoAtual}.${count}`;
     }
 
@@ -377,30 +378,17 @@ async function salvarRegistroAcervo(event, isAtualizacao = false) {
         novoRegistro.id = Number(idExistente);
     }
 
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-        try {
-            let resultado;
-            if (idExistente) {
-                resultado = await supabaseClient
-                    .from('acervo')
-                    .update(novoRegistro)
-                    .eq('id', idExistente);
-                alert("Registro atualizado com sucesso!");
-            } else {
-                resultado = await supabaseClient
-                    .from('acervo')
-                    .insert([novoRegistro]);
-                alert("Registro salvo no acervo com sucesso!");
-            }
-
-            if (resultado.error) throw resultado.error;
-
-            limparFormulario();
-            if (typeof carregarAcervo === 'function') await carregarAcervo();
-        } catch (err) {
-            console.error("Erro ao salvar/atualizar no Supabase:", err);
-            alert("Erro do Banco de Dados: " + err.message);
-        }
+    if (!supabaseClient) { alert('Sem conexão com o banco de dados. Registro não salvo.'); return; }
+    try {
+        const tabela = supabaseClient.from('acervo');
+        const { error } = idExistente ? await tabela.update(novoRegistro).eq('id', idExistente) : await tabela.insert([novoRegistro]);
+        if (error) throw error;
+        alert(idExistente ? 'Registro atualizado com sucesso!' : 'Registro salvo no acervo com sucesso!');
+        limparFormulario();
+        await carregarAcervo();
+    } catch (err) {
+        console.error('Erro ao salvar no Supabase:', err);
+        alert('Erro do Banco de Dados: ' + err.message);
     }
 }
 
@@ -509,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formAcervo = document.getElementById('formMARC') || document.getElementById('formCadastroAcervo');
     if (formAcervo && !formAcervo.dataset.listenerAttached) {
         formAcervo.dataset.listenerAttached = "true";
-        formAcervo.addEventListener('submit', (e) => salvarRegistroAcervo(e));
+        formAcervo.addEventListener('submit', (e) => salvarRegistroAcervo(e, !!document.getElementById('livro_id')?.value));
     }
 });
 
@@ -672,26 +660,26 @@ function verCIP(id) {
 
     const autor = livro.nome_pessoal || livro.autor_entidade || 'Autor não informado';
     const titulo = livro.titulo_principal || 'Sem título';
-    const subtitulo = livro.subtitulo ? `: ${livro.subtitulo}` : '';
-    const imprenta = `${livro.local_publicacao || 'Belém'} : ${livro.editora || 'Malo'}, ${livro.data_publicacao || '2026'}.`;
-    const paginas = livro.numero_paginas ? `${livro.numero_paginas}` : 'p. : il. ; 23 cm.';
-    const isbn = livro.isbn ? `ISBN ${livro.isbn}` : '';
-    const assunto = livro.assunto ? `1. ${livro.assunto}.` : '1. Trânsito.';
-    const cdd = livro.classificacao_cdd || '363.1';
-    const cutter = livro.codigo_autor_cutter || 'C32';
+    const subtitulo = livro.subtitulo ? `: ${escaparHTML(livro.subtitulo)}` : '';
+    const imprenta = `${escaparHTML(livro.local_publicacao || 's.l.')} : ${escaparHTML(livro.editora || 's.n.')}, ${escaparHTML(livro.data_publicacao || 's.d.')}.`;
+    const paginas = livro.numero_paginas ? `${escaparHTML(livro.numero_paginas)}` : '';
+    const isbn = livro.isbn ? `ISBN ${escaparHTML(livro.isbn)}` : '';
+    const assunto = livro.assunto ? `1. ${escaparHTML(livro.assunto)}.` : '';
+    const cdd = livro.classificacao_cdd || '';
+    const cutter = livro.codigo_autor_cutter || '';
 
     area.innerHTML = `
         <div style="text-align:center; font-weight:bold; margin-bottom:8px; font-size:0.8rem;">
-            Dados Internacionais de Catalogação na Publicação (CIP)<br>FreechxRed - Malo
+            Dados Internacionais de Catalogação na Publicação (CIP)<br>Venous
         </div>
         <hr style="border: 0; border-top: 1px solid #000; margin: 6px 0;">
         <div style="margin-left: 20px; text-indent: -20px;">
-            <strong>${autor}</strong><br>
-            ${titulo}${subtitulo} / ${livro.responsabilidade || autor}. -- ${livro.edicao || '1. ed.'} -- ${imprenta}<br>
-            ${paginas}<br><br>
-            ${isbn}<br><br>
-            ${assunto} I. Título.<br>
-            <div style="text-align:right;">Cutter: ${cutter}</div>
+            <strong>${escaparHTML(autor)}</strong><br>
+            ${escaparHTML(titulo)}${escaparHTML(subtitulo)} / ${escaparHTML(livro.responsabilidade || autor)}. -- ${escaparHTML(livro.edicao || '1. ed.')} -- ${escaparHTML(imprenta)}<br>
+            ${escaparHTML(paginas)}<br><br>
+            ${escaparHTML(isbn)}<br><br>
+            ${escaparHTML(assunto)} I. Título.<br>
+            <div style="text-align:right;">Cutter: ${escaparHTML(cutter)}</div>
         </div>
         <hr style="border: 0; border-top: 1px solid #000; margin: 6px 0;">
     `;
@@ -736,14 +724,14 @@ function renderizarLixeira() {
 
     lixeira.forEach(livro => {
         const capaSrc = livro.capa_url || '';
-        const imgHtml = capaSrc ? `<img src="${capaSrc}" style="height:40px; border-radius:4px;">` : '-';
+        const imgHtml = capaSrc ? `<img src="${escaparHTML(capaSrc)}" style="height:40px; border-radius:4px;">` : '-';
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${imgHtml}</td>
-            <td><strong>${livro.titulo_principal || 'Sem título'}</strong></td>
-            <td>${livro.nome_pessoal || livro.autor_entidade || '-'}</td>
-            <td>${livro.numero_tombo || '-'}</td>
-            <td>${livro.classificacao_cdd || '-'}</td>
+            <td><strong>${escaparHTML(livro.titulo_principal || 'Sem título')}</strong></td>
+            <td>${escaparHTML(livro.nome_pessoal || livro.autor_entidade || '-')}</td>
+            <td>${escaparHTML(livro.numero_tombo || '-')}</td>
+            <td>${escaparHTML(livro.classificacao_cdd || '-')}</td>
             <td style="display:flex; gap:6px;">
                 <button class="btn btn-primary" style="padding:2px 6px; font-size:0.75rem;" onclick="restaurarDaLixeira(${livro.id})">
                     <i class="fa-solid fa-rotate-left"></i> Restaurar
@@ -848,6 +836,7 @@ function editarLivro(id) {
     document.getElementById('nota_bibliografia').value = livro.nota_bibliografia || '';
     document.getElementById('nota_conteudo').value = livro.nota_conteudo || '';
     document.getElementById('notas_resumo').value = livro.notas_resumo || '';
+    document.getElementById('nota_tese').value = livro.nota_tese || '';
 
     document.getElementById('assunto').value = livro.assunto || '';
     document.getElementById('iniciais_assunto').value = livro.iniciais_assunto || '';
@@ -925,7 +914,7 @@ async function buscarDadosISBN() {
                 document.getElementById('data_publicacao').value = anoMatch ? anoMatch[0] : livro.publish_date;
             }
             if (livro.number_of_pages) {
-                document.getElementById('numero_paginas').value = `${livro.number_of_pages} p.`;
+                document.getElementById('numero_paginas').value = livro.number_of_pages;
                 document.getElementById('descricao_fisica').value = `${livro.number_of_pages} p.`;
             }
             if (livro.cover && livro.cover.large) {
@@ -965,7 +954,7 @@ function popularSelectEtiquetas() {
                 const tombo = l.numero_tombo || 'Sem Tombo';
                 const autor = l.nome_pessoal || l.autor_entidade || 'Autor Desconhecido';
 
-                optionsHtml += `<option value="${l.id}">${autor} — "${titulo}" (Tombo: ${tombo})</option>`;
+                optionsHtml += `<option value="${l.id}">${escaparHTML(autor)} — "${escaparHTML(titulo)}" (Tombo: ${escaparHTML(tombo)})</option>`;
             });
         }
     }
@@ -1009,20 +998,20 @@ function atualizarPreviewFolhaA4() {
                 
                 <div style="display: flex; flex-direction: column; justify-content: center; gap: 2px; padding-left: 6px; max-width: 68%;">
                     <div style="font-size: 0.65rem; font-weight: bold; line-height: 1.15; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ${autor} — "${titulo}"
+                        ${escaparHTML(autor)} — "${escaparHTML(titulo)}"
                     </div>
                     <div style="font-family: monospace; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; color: #1e293b;">
-                        |||*${codigoBarrasReal}*|||
+                        |||*${escaparHTML(codigoBarrasReal)}*|||
                     </div>
                     <div style="font-size: 0.65rem; font-weight: bold; color: #475569;">
-                        Tombo: ${tombo}
+                        Tombo: ${escaparHTML(tombo)}
                     </div>
                 </div>
 
                 <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right; font-size: 0.85rem; font-weight: bold; line-height: 1.2; padding-right: 2px;">
-                    <span style="color: #0284c7;">${cdd}</span>
-                    <span>${cutter}</span>
-                    <span style="font-size: 0.65rem; color: #64748b; font-weight: normal;">${edicao}</span>
+                    <span style="color: #0284c7;">${escaparHTML(cdd)}</span>
+                    <span>${escaparHTML(cutter)}</span>
+                    <span style="font-size: 0.65rem; color: #64748b; font-weight: normal;">${escaparHTML(edicao)}</span>
                 </div>
             </div>
         `;
@@ -1042,6 +1031,7 @@ function gerarFolhaA4Etiquetas() {
 
     const livrosParaImprimir = acervoCompleto.filter(l => idsSelecionados.includes(Number(l.id)));
     const janelaImpressao = window.open('', '_blank', 'width=850,height=900');
+    if (!janelaImpressao) { alert('Permita pop-ups para imprimir as etiquetas.'); return; }
 
     let htmlEtiquetas = '';
     livrosParaImprimir.forEach((livro) => {
@@ -1057,14 +1047,14 @@ function gerarFolhaA4Etiquetas() {
         htmlEtiquetas += `
             <div class="etiqueta-bloco">
                 <div class="etiqueta-esq">
-                    <div class="autor-titulo">${autor}<br>"${titulo}"</div>
-                    <div class="codigo-barras-real">|||*${codigoBarrasReal}*|||</div>
-                    <div class="tombo-txt">Tombo: ${tombo}</div>
+                    <div class="autor-titulo">${escaparHTML(autor)}<br>"${escaparHTML(titulo)}"</div>
+                    <div class="codigo-barras-real">|||*${escaparHTML(codigoBarrasReal)}*|||</div>
+                    <div class="tombo-txt">Tombo: ${escaparHTML(tombo)}</div>
                 </div>
                 <div class="etiqueta-dir">
-                    <div class="cdd-txt">${cdd}</div>
-                    <div class="cutter-txt">${cutter}</div>
-                    <div class="edicao-txt">${edicao}</div>
+                    <div class="cdd-txt">${escaparHTML(cdd)}</div>
+                    <div class="cutter-txt">${escaparHTML(cutter)}</div>
+                    <div class="edicao-txt">${escaparHTML(edicao)}</div>
                 </div>
             </div>
         `;
@@ -1075,7 +1065,7 @@ function gerarFolhaA4Etiquetas() {
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>Impressão de Etiquetas A4 - FreechxRed</title>
+            <title>Impressão de Etiquetas A4 - Venous</title>
             <style>
                 @page { size: A4; margin: 10mm; }
                 body { font-family: 'Courier New', Courier, monospace; background: #fff; color: #000; margin: 0; padding: 0; }

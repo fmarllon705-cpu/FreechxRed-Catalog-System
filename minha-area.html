@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Área • FreechxRed</title>
+    <meta name="color-scheme" content="light dark">
+    <title>Minha Área • Venous</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="scripts/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="scripts/script.js" defer></script>
-    <script src="scripts/gestão.js" defer></script>
+    <script src="scripts/gestao.js" defer></script>
     <script src="scripts/chat.js" defer></script>
 </head>
-<body>
+<body data-acesso="logado">
 
 <header>
     <div class="header-content">
         <div class="logo-box">
             <div>
-                <h1>FreechxRed</h1>
+                <h1>Venous</h1>
                 <h3>Painel do Leitor & Social</h3>
             </div>
         </div>
@@ -48,7 +49,7 @@
     </div>
 </nav>
 
-<main class="container">
+<main class="container active" id="tab-perfil">
     <div class="grid-two-columns">
         <div class="card">
             <div class="card-header">
@@ -90,7 +91,7 @@
             </div>
         </div>
 
-        <div class="grid-chat-layout" style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; margin-top: 15px;">
+        <div class="grid-chat-layout">
             <div style="border-right: 1px solid var(--border-color); padding-right: 15px;">
                 <h5 style="font-size:0.85rem; margin-bottom:12px; color:var(--text-muted);">SUAS CONVERSAS</h5>
                 <div id="listaConversas" style="display:flex; flex-direction:column; gap:8px; max-height:550px; overflow-y:auto;">
@@ -108,8 +109,24 @@
     </div>
 </main>
 
+<div class="modal-overlay" id="modalNovoGrupo"><div class="modal-box"><span class="close-modal" onclick="fecharModal('modalNovoGrupo')">&times;</span>
+    <h3><i class="fa-solid fa-users"></i> Novo Clube do Leitor</h3>
+    <div class="form-group" style="margin:12px 0"><label for="txtNomeNovoGrupo">Nome do clube</label><input id="txtNomeNovoGrupo"></div>
+    <div id="listaMembrosParaGrupo" style="max-height:200px;overflow-y:auto;margin-bottom:12px"></div>
+    <button class="btn btn-primary" onclick="confirmarCriacaoGrupo()">Criar clube</button></div></div>
+<div class="modal-overlay" id="modalNovoChatP2P"><div class="modal-box"><span class="close-modal" onclick="fecharModal('modalNovoChatP2P')">&times;</span>
+    <h3><i class="fa-solid fa-user-plus"></i> Nova conversa</h3>
+    <div class="form-group" style="margin:12px 0"><label for="selectUsuarioP2P">Usuário</label><select id="selectUsuarioP2P"></select></div>
+    <button class="btn btn-primary" onclick="confirmarCriacaoP2P()">Iniciar conversa</button></div></div>
+<div class="modal-overlay" id="modalSelecionarLivroChat"><div class="modal-box"><span class="close-modal" onclick="fecharModal('modalSelecionarLivroChat')">&times;</span>
+    <h3><i class="fa-solid fa-book-bookmark"></i> Livro da leitura conjunta</h3>
+    <div class="btn-group" style="margin:12px 0"><button id="btnAbaAcervoChat" class="btn btn-primary" onclick="alternarOrigemLivroChat('acervo')">Do acervo</button><button id="btnAbaForaChat" class="btn btn-outline" onclick="alternarOrigemLivroChat('fora')">Externo</button></div>
+    <div id="boxLivroAcervoChat" class="form-group"><select id="selectLivroAcervoChat"></select></div>
+    <div id="boxLivroForaChat" class="form-grid" style="display:none"><input id="txtLivroForaTitulo" placeholder="Título"><input id="txtLivroForaCapa" placeholder="URL da capa"><input id="numLivroForaPaginas" type="number" min="1" placeholder="Páginas"></div>
+    <button class="btn btn-primary" style="margin-top:12px" onclick="salvarLivroLeituraConjunta()">Salvar</button></div></div>
+
 <footer class="footer-bar">
-    <p>© 2026 • FreechxRed — Todos os direitos reservados.</p>
+    <p>© 2026 • Venous — Todos os direitos reservados.</p>
 </footer>
 </body>
 </html>

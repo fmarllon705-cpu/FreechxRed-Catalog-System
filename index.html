@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Início • FreechxRed</title>
+    <meta name="color-scheme" content="light dark">
+    <title>Início • Venous</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="scripts/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" defer></script>
     <script src="scripts/script.js" defer></script>
     <script src="scripts/registros.js" defer></script>
-    <script src="scripts/gestão.js" defer></script>
+    <script src="scripts/gestao.js" defer></script>
     <script src="scripts/chat.js" defer></script>
 </head>
 <body>
@@ -22,7 +23,7 @@
     <div class="header-content">
         <div class="logo-box">
             <div>
-                <h1>VenoousCatalogSystem</h1>
+                <h1>Venous</h1>
                 <h3>Sistema Geral de Catalogação e Consulta</h3>
             </div>
         </div>
@@ -60,7 +61,7 @@
 
             <div class="form-grid">
                 <div class="form-group full-width">
-                    <input type="text" id="txtBusca" placeholder="Digite Título, Autor, Assunto, Tombo, ISBN ou CDD..." onkeyup="filtrarAcervo()">
+                    <input type="text" id="txtBusca" placeholder="Digite Título, Autor, Assunto, Tombo, ISBN ou CDD..." oninput="filtrarAcervo()">
                 </div>
             </div>
 
@@ -143,7 +144,7 @@
 </div>
 
 <!-- MODAL DE PRÉ-REGISTO -->
-<div class="modal-overlay" id="modalPreCadastro" style="display: none;">
+<div class="modal-overlay" id="modalPreCadastro">
     <div class="modal-box">
         <span class="close-modal" onclick="fecharModalPreCadastro()">&times;</span>
         <h3><i class="fa-solid fa-id-card"></i> Pré-registo Online</h3>
@@ -177,7 +178,7 @@
 </div>
 
 <!-- MODAL DE FICHA CIP E RESENHAS -->
-<div class="modal-overlay" id="modalCIP" style="display: none;">
+<div class="modal-overlay" id="modalCIP">
     <div class="modal-box" style="max-width: 650px;">
         <span class="close-modal" onclick="fecharModalCIP()">&times;</span>
         <h3><i class="fa-solid fa-id-card"></i> Ficha Catalográfica (CIP) & Resenhas</h3>
@@ -222,7 +223,7 @@
 </div>
 
 <footer class="footer-bar">
-    <p>© 2026 • FreechxRed — Todos os direitos reservados.</p>
+    <p>© 2026 • Venous — Todos os direitos reservados.</p>
 </footer>
 </body>
 </html>

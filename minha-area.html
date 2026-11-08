@@ -9,10 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="scripts/style.css">
+    <link rel="stylesheet" href="scripts/minha-area.css">
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="scripts/script.js" defer></script>
     <script src="scripts/gestao.js" defer></script>
     <script src="scripts/chat.js" defer></script>
+    <script src="scripts/minha-area.js" defer></script>
 </head>
 <body data-acesso="logado">
 
@@ -39,8 +41,8 @@
 
 <nav class="main-nav">
     <div class="nav-container">
-        <a href="index.html" class="nav-tab active"><i class="fa-solid fa-house"></i> Home / Consulta</a>
-        <a href="minha-area.html" class="nav-tab" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
+        <a href="index.html" class="nav-tab"><i class="fa-solid fa-house"></i> Home / Consulta</a>
+        <a href="minha-area.html" class="nav-tab active" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
         <a href="circulacao.html" class="nav-tab" id="tabNavCirculacao" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Circulação</a>
         <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-file-pen"></i> Catalogação</a>
         <a href="suporte.html" class="nav-tab"><i class="fa-solid fa-headset"></i> Suporte</a>
@@ -49,66 +51,64 @@
     </div>
 </nav>
 
-<main class="container active" id="tab-perfil">
-    <div class="grid-two-columns">
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title"><i class="fa-solid fa-heart" style="color:var(--accent-red);"></i> Meus Favoritos</span>
-            </div>
-            <div id="meusFavoritosContainer" class="acervo-list favorite-list-container">
-                <p style="color:var(--text-muted); padding:10px;">Nenhum livro favoritado.</p>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title"><i class="fa-solid fa-bookmark" style="color:var(--accent-color);"></i> Minhas Reservas</span>
-            </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Livro</th>
-                            <th>Data</th>
-                            <th>Status</th>
-                            <th>Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbMinhasReservas">
-                        <tr><td colspan="4">Nenhuma reserva ativa.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<main class="container active ma" id="tab-perfil">
+  <section class="hero">
+    <div class="av" id="heroAv">?</div>
+    <div class="hero-info"><h2 id="heroNome">Minha Área</h2><p id="heroSub">Seu espaço de leitura, reservas e conversas</p></div>
+    <div class="stats">
+      <button class="stat" data-go="feed"><b id="stPosts">0</b><span>Posts</span></button>
+      <button class="stat" data-go="favoritos"><b id="stFavs">0</b><span>Favoritos</span></button>
+      <button class="stat" data-go="reservas"><b id="stRes">0</b><span>Reservas</span></button>
+      <button class="stat" data-go="chat"><b id="stChats">0</b><span>Conversas</span></button>
     </div>
-
-    <div class="card" style="margin-top:20px;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="card-title"><i class="fa-solid fa-comments"></i> Chat & Clubes do Leitor</span>
-            <div style="display:flex; gap:8px;">
-                <button class="btn btn-outline" style="font-size:0.8rem;" onclick="abrirModalNovoChatP2P()"><i class="fa-solid fa-user-plus"></i> Conversar</button>
-                <button class="btn btn-primary" style="font-size:0.8rem;" onclick="abrirModalNovoGrupo()"><i class="fa-solid fa-users"></i> Criar Clube</button>
-            </div>
-        </div>
-
-        <div class="grid-chat-layout">
-            <div style="border-right: 1px solid var(--border-color); padding-right: 15px;">
-                <h5 style="font-size:0.85rem; margin-bottom:12px; color:var(--text-muted);">SUAS CONVERSAS</h5>
-                <div id="listaConversas" style="display:flex; flex-direction:column; gap:8px; max-height:550px; overflow-y:auto;">
-                    <p style="color:var(--text-muted); font-size:0.8rem;">Carregando chats...</p>
-                </div>
-            </div>
-
-            <div id="painelChatAtivo" style="display:flex; flex-direction:column; min-height:550px; background:var(--bg-card); border-radius:12px; border:1px solid var(--border-color); overflow:hidden;">
-                <div style="text-align:center; color:var(--text-muted); margin:auto; padding:60px 20px;">
-                    <i class="fa-solid fa-comments fa-3x" style="margin-bottom:15px; color:var(--primary-color);"></i>
-                    <p>Selecione ou crie uma conversa para iniciar o bate-papo!</p>
-                </div>
-            </div>
-        </div>
+  </section>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="feed"><i class="fa-solid fa-newspaper"></i> Feed</button>
+    <button role="tab" data-tab="favoritos"><i class="fa-solid fa-heart"></i> Favoritos</button>
+    <button role="tab" data-tab="reservas"><i class="fa-solid fa-bookmark"></i> Reservas</button>
+    <button role="tab" data-tab="chat"><i class="fa-solid fa-comments"></i> Chat <span id="tabBadge" class="chat-badge hidden">0</span></button>
+    <button role="tab" data-tab="perfil"><i class="fa-solid fa-user-pen"></i> Perfil</button>
+    <button role="tab" data-tab="moderacao" id="tabMod" class="hidden"><i class="fa-solid fa-shield-halved"></i> Moderação <span id="modBadge" class="chat-badge hidden">0</span></button>
+  </div>
+  <section class="pane" id="pane-feed"><div class="feed-grid">
+    <div>
+      <div class="box comp" id="comp"><div class="av" id="compAv">?</div><div class="comp-main">
+        <textarea id="compTxt" maxlength="500" placeholder="Compartilhe uma resenha, citação ou recomendação…"></textarea>
+        <div class="comp-more">
+          <div class="chips" id="compTipos"></div>
+          <div id="compBook"></div><div class="tray" id="compMidia"></div>
+          <small class="muted"><i class="fa-solid fa-shield-halved"></i> Posts passam por moderação da equipe. Evite ofensas e links.</small>
+          <div class="comp-bar"><button class="btn btn-outline btn-sm" id="btnLivro"><i class="fa-solid fa-book"></i> Livros</button><button class="btn btn-outline btn-sm" id="btnFoto"><i class="fa-solid fa-image"></i> Foto/GIF</button><button class="btn btn-outline btn-sm" id="btnLink" title="Colar link de imagem ou GIF"><i class="fa-solid fa-link"></i></button><input type="file" id="arqMidia" accept="image/*" multiple hidden><span class="stars hidden" id="compStars"></span><span class="grow"></span><small class="muted" id="compCnt">0/500</small><button class="btn btn-primary" id="btnPub" disabled><i class="fa-solid fa-paper-plane"></i> Publicar</button></div>
+          <div class="picker hidden" id="linkBox"><div class="cmt-f"><input id="linkUrl" placeholder="Cole o link de uma imagem ou GIF (https://…)"><button class="btn btn-primary btn-sm" id="linkAdd">Adicionar</button></div></div>
+          <div class="picker hidden" id="picker"><input id="pickQ" placeholder="Buscar no acervo…"><div class="picker-list" id="pickList"></div></div>
+        </div></div></div>
+      <div class="toolbar"><select id="fFiltro"><option value="todos">Todos os posts</option><option value="meus">Meus posts</option><option value="resenha">Resenhas</option><option value="citacao">Citações</option><option value="recomendo">Recomendações</option><option value="lendo">Lendo agora</option></select><select id="fOrdem"><option value="recentes">Mais recentes</option><option value="populares">Mais populares</option></select></div>
+      <div id="feedLista"></div><div class="live" id="feedModo"></div>
     </div>
+    <aside class="side"><div class="box"><h4>Minhas reservas <a href="#reservas" data-go="reservas" class="muted">ver todas</a></h4><div id="sideRes"></div></div><div class="box"><h4>Favoritos recentes <a href="#favoritos" data-go="favoritos" class="muted">ver todos</a></h4><div id="sideFav"></div></div></aside>
+  </div></section>
+  <section class="pane" id="pane-favoritos"><div class="toolbar"><input id="favQ" type="search" placeholder="Buscar nos favoritos…"></div><div class="favs" id="meusFavoritosContainer"></div></section>
+  <section class="pane" id="pane-reservas"><div class="toolbar"><select id="resFiltro"><option value="">Todos os status</option><option>Pendente</option><option>Concluida</option><option>Cancelada</option></select></div><div class="box" id="tbMinhasReservas"></div></section>
+  <section class="pane" id="pane-chat">
+    <div class="chat-shell" id="chatShell">
+      <div class="chat-side"><div class="chat-side-h"><div class="btn-group"><button class="btn btn-outline btn-sm" onclick="abrirModalNovoChatP2P()"><i class="fa-solid fa-user-plus"></i> Conversar</button><button class="btn btn-primary btn-sm" onclick="abrirModalNovoGrupo()"><i class="fa-solid fa-users"></i> Criar clube</button></div><input id="chatBusca" type="search" placeholder="Buscar conversa…"><button class="btn btn-outline btn-sm" onclick="limparTodasConversas()"><i class="fa-solid fa-broom"></i> Limpar todas (para mim)</button></div><div id="listaConversas"></div></div>
+      <div id="painelChatAtivo"><div class="empty" style="margin:auto;border:0"><i class="fa-solid fa-comments"></i>Selecione ou crie uma conversa para começar.</div></div>
+    </div>
+  </section>
+  <section class="pane" id="pane-perfil"><div class="feed-grid"><div class="box"><h4>Editar perfil</h4>
+    <div class="pf-av"><div class="av" id="pfFoto"></div><div><button class="btn btn-outline btn-sm" id="pfEscolher"><i class="fa-solid fa-camera"></i> Alterar foto</button> <button class="btn btn-outline btn-sm" id="pfRemover">Remover</button><input type="file" id="pfArq" accept="image/*" hidden><br><small class="muted">JPG, PNG ou WebP; recortada em quadrado.</small></div></div>
+    <div class="form-grid"><div class="form-group full-width"><label for="pfBio">Bio</label><textarea id="pfBio" maxlength="200" rows="3" placeholder="Conte um pouco sobre você e suas leituras…"></textarea><small class="muted" id="pfCnt">0/200</small></div>
+    <div class="form-group"><label for="pfCidade">Cidade</label><input id="pfCidade" maxlength="60" placeholder="Belém, PA"></div><div class="form-group"><label for="pfLivro">Livro favorito</label><input id="pfLivro" maxlength="80"></div>
+    <div class="form-group full-width"><label>Gêneros favoritos (até 6)</label><div class="chips" id="pfGeneros"></div></div></div>
+    <button class="btn btn-primary" id="pfSalvar" style="margin-top:12px"><i class="fa-solid fa-floppy-disk"></i> Salvar perfil</button></div>
+    <aside class="side"><div class="box"><h4>Pré-visualização</h4><div id="pfPrev"></div></div><div class="box"><h4>Conta</h4><div id="pfConta" class="muted"></div></div></aside></div></section>
+  <section class="pane" id="pane-moderacao"><div class="toolbar"><select id="modFiltro"><option value="fila">Fila: pendentes e denunciados</option><option value="removidos">Removidos</option></select></div><div id="modLista"></div></section>
 </main>
-
+<div class="modal-overlay" id="modalPerfil"><div class="modal-box"><span class="close-modal" onclick="fecharModal('modalPerfil')">&times;</span><div id="perfilConteudo"></div></div></div>
+<div class="modal-overlay" id="modalImg"><img id="imgGrande" alt="" style="max-width:94vw;max-height:90dvh;border-radius:10px"></div>
+<div id="toasts" aria-live="polite"></div>
+<div class="modal-overlay" id="modalGerenciarChat"><div class="modal-box"><span class="close-modal" onclick="fecharModal('modalGerenciarChat')">&times;</span><h3><i class="fa-solid fa-broom"></i> Gerenciar conversa</h3><div id="opcoesChat"></div></div></div>
+<div class="modal-overlay" id="modalConfirmar" style="z-index:1100"><div class="modal-box"><h3 id="cfT"></h3><p id="cfP" class="muted" style="margin:10px 0 16px"></p><div class="btn-group" style="justify-content:flex-end"><button class="btn btn-outline" id="cfNo">Cancelar</button><button class="btn btn-danger" id="cfYes">Confirmar</button></div></div></div>
 <div class="modal-overlay" id="modalNovoGrupo"><div class="modal-box"><span class="close-modal" onclick="fecharModal('modalNovoGrupo')">&times;</span>
     <h3><i class="fa-solid fa-users"></i> Novo Clube do Leitor</h3>
     <div class="form-group" style="margin:12px 0"><label for="txtNomeNovoGrupo">Nome do clube</label><input id="txtNomeNovoGrupo"></div>

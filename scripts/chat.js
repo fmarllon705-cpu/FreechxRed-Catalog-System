@@ -38,7 +38,7 @@ function notificar(nome, texto) {
 }
 function atualizarTitulo() {
     const n = Object.values(naoLidas).reduce((a, b) => a + b, 0);
-    document.title = (n ? `(${n}) ` : '') + TITULO_BASE;
+    document.title = (n ? `(${n}) ` : '') + TITULO_BASE; window.MinhaArea?.onChatBadge?.(n);
 }
 
 // ---------- Não lidas ----------
@@ -62,11 +62,13 @@ function marcarLidoAtivo() {
 function renderizarListaChats() {
     const cont = $('listaConversas'); if (!cont) return;
     if (!listaChatsUsuario.length) { cont.innerHTML = '<p class="muted" style="font-size:.85rem;padding:10px">Você não possui conversas ativas.</p>'; return; }
-    cont.innerHTML = listaChatsUsuario.map(c => {
+    const q = ($('chatBusca')?.value || '').toLowerCase(), vis = listaChatsUsuario.filter(c => c.nome.toLowerCase().includes(q));
+    if (!vis.length) { cont.innerHTML = '<p class="muted" style="font-size:.85rem;padding:10px">Nenhuma conversa encontrada.</p>'; return; }
+    cont.innerHTML = vis.map(c => {
         const n = naoLidas[c.id] || 0, ativo = chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, c.id);
-        return `<div class="chat-item${ativo ? ' active' : ''}" data-chat="${c.id}"><i class="fa-solid ${c.tipo === 'grupo' ? 'fa-users' : 'fa-user'}"></i><span class="chat-nome">${escaparHTML(c.nome)}</span>${n ? `<span class="chat-badge">${n > 99 ? '99+' : n}</span>` : ''}</div>`;
+        return `<div class="chat-item${ativo ? ' active' : ''}" data-chat="${c.id}"><i class="fa-solid ${c.tipo === 'grupo' ? 'fa-users' : 'fa-user'}"></i><span class="chat-nome">${escaparHTML(c.nome)}</span>${n ? `<span class="chat-badge">${n > 99 ? '99+' : n}</span>` : ''}<button class="chat-del" data-gerir="${c.id}" title="Limpar ou excluir" aria-label="Limpar ou excluir conversa"><i class="fa-solid fa-trash"></i></button></div>`;
     }).join('');
-    cont.onclick = e => { const el = e.target.closest('[data-chat]'); if (el) selecionarChat(listaChatsUsuario.find(c => String(c.id) === el.dataset.chat)); };
+    cont.onclick = e => { const g = e.target.closest('[data-gerir]'); if (g) { e.stopPropagation(); return gerenciarConversa(listaChatsUsuario.find(c => String(c.id) === g.dataset.gerir)); } const el = e.target.closest('[data-chat]'); if (el) selecionarChat(listaChatsUsuario.find(c => String(c.id) === el.dataset.chat)); };
 }
 
 async function carregarListaChats() {
@@ -106,6 +108,8 @@ async function assinar() {
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_membros', filter: porChat }, p => { if (ativo(p.new)) atualizarAreaLeitura(); })
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chats_grupos', filter: `id=in.(${ids.join(',')})` }, p => aoAtualizarChat(p.new));
     }
+    ch.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_mensagens' }, p => { if (chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, p.old?.chat_id)) carregarMensagens(); })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chats_grupos' }, p => { if (listaChatsUsuario.some(c => mesmoId(c.id, p.old?.id))) { if (chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, p.old.id)) resetarPainelChat(); carregarListaChats(); } });
     canalGlobal = ch;
     ch.subscribe(status => {
         if (ch !== canalGlobal) return;
@@ -174,15 +178,15 @@ async function selecionarChat(chat) {
     if (!chat) return;
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
     chatAtivoSelecionado = chat; delete naoLidas[chat.id];
-    renderizarListaChats(); atualizarTitulo(); entrarNaSala(chat);
+    renderizarListaChats(); atualizarTitulo(); entrarNaSala(chat); $('chatShell')?.classList.add('abrir');
     await renderizarPainelChatAtivo();
 }
 
 async function renderizarPainelChatAtivo() {
     const c = $('painelChatAtivo'), chat = chatAtivoSelecionado; if (!c || !chat) return;
     c.innerHTML = `
-<div class="chat-head"><strong><i class="fa-solid ${chat.tipo === 'grupo' ? 'fa-users' : 'fa-user'}"></i> ${escaparHTML(chat.nome)}<small id="contadorOnline"></small></strong>
-<button class="btn btn-outline btn-sm" onclick="abrirModalSelecionarLivro()"><i class="fa-solid fa-book-bookmark"></i> Definir Livro</button></div>
+<div class="chat-head"><button class="btn btn-outline btn-sm chat-back" onclick="voltarListaChats()" aria-label="Voltar"><i class="fa-solid fa-arrow-left"></i></button><strong style="flex:1"><i class="fa-solid ${chat.tipo === 'grupo' ? 'fa-users' : 'fa-user'}"></i> ${escaparHTML(chat.nome)}<small id="contadorOnline"></small></strong>
+<span style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="abrirModalSelecionarLivro()"><i class="fa-solid fa-book-bookmark"></i> Livro</button><button class="btn btn-outline btn-sm" onclick="gerenciarConversa()" title="Limpar ou excluir conversa"><i class="fa-solid fa-broom"></i> Limpar / Excluir</button></span></div>
 <div class="chat-leitura" id="areaLeitura"></div>
 <div id="boxMensagensChat"></div>
 <div class="chat-digitando" id="indicadorDigitando"></div>
@@ -232,12 +236,15 @@ ${membros.map(m => {
 // ---------- Mensagens ----------
 function adicionarMensagemNaTela(m) {
     const box = $('boxMensagensChat'); if (!box || !chatAtivoSelecionado || !mesmoId(m.chat_id, chatAtivoSelecionado.id)) return null;
+    if (m.created_at && m.created_at !== 'tmp' && new Date(m.created_at) <= new Date(corteChat(m.chat_id))) return null;
     if (m.id != null && box.querySelector(`[data-id="${CSS.escape(String(m.id))}"]`)) return null;
     const meu = mesmoId(m.usuario_id, usuarioAtual.id), perto = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
     const hora = new Date(m.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const d = document.createElement('div');
     d.className = 'msg' + (meu ? ' msg-mine' : ''); d.dataset.id = m.id ?? ''; d.dataset.t = m.created_at || '';
     d.innerHTML = `<small>${meu ? 'Você' : escaparHTML(m.nome_usuario || 'Usuário')} • ${hora}</small><div>${escaparHTML(m.texto)}</div>`;
+    const ant = [...box.children].reverse().find(e => e.classList.contains('msg')), dia = x => new Date(!x || x === 'tmp' ? Date.now() : x).toDateString();
+    if (!ant || dia(ant.dataset.t) !== dia(m.created_at)) { const sp = document.createElement('div'); sp.className = 'dia-sep'; sp.textContent = new Date(!m.created_at || m.created_at === 'tmp' ? Date.now() : m.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' }); box.appendChild(sp); }
     box.appendChild(d); if (meu || perto) rolarChatParaFim();
     return d;
 }
@@ -287,76 +294,8 @@ async function atualizarMeuProgresso(total) {
     atualizarAreaLeitura();
 }
 
-// ---------- Perfil (favoritos e reservas) ----------
-async function carregarPerfilUsuario() {
-    const divPerfil = document.getElementById('tab-perfil');
-    if (!divPerfil) return;
-
-    if (!usuarioAtual || !usuarioAtual.id || usuarioAtual.nome === 'Visitante (Público)') {
-        return;
-    }
-
-    // 2. Renderizar Favoritos do Usuário Logado
-    const containerFavoritos = document.getElementById('meusFavoritosContainer');
-    if (containerFavoritos) {
-        if (!Array.isArray(listaFavoritos)) listaFavoritos = [];
-        const meusFavs = listaFavoritos.filter(f => Number(f.usuario_id) === Number(usuarioAtual.id));
-
-        if (meusFavs.length === 0) {
-            containerFavoritos.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Você ainda não possui livros favoritados.</p>';
-        } else {
-            containerFavoritos.innerHTML = '';
-            meusFavs.forEach(fav => {
-                const livro = (acervoCompleto || []).find(l => Number(l.id) === Number(fav.livro_id));
-                if (livro) {
-                    const capaSrc = livro.capa_url || livro.capaUrl || '';
-                    containerFavoritos.innerHTML += `
-                        <div class="favorite-item">
-                            <div class="book-info">
-                                <img src="${escaparHTML(capaSrc)}" alt="Capa" class="book-cover" onerror="this.src='https://via.placeholder.com/45x65?text=Sem+Capa'">
-                                <div class="book-details">
-                                    <span class="book-title">${escaparHTML(livro.titulo_principal || livro.tituloPrincipal)}</span>
-                                    <span class="book-author" style="display:block; font-size:0.8rem; color:var(--text-muted);">${escaparHTML(livro.nome_pessoal || livro.responsabilidade || 'Autor desconhecido')}</span>
-                                </div>
-                            </div>
-                            <button class="btn-remove" onclick="alternarFavorito(${livro.id})">
-                                <i class="fa-solid fa-trash"></i> Remover
-                            </button>
-                        </div>
-                    `;
-                }
-            });
-        }
-    }
-
-    // 3. Renderizar Minhas Reservas / Pedidos
-    const containerReservas = document.getElementById('minhasReservasContainer') || document.getElementById('tbMinhasReservas');
-    if (containerReservas) {
-        if (!Array.isArray(listaReservas)) listaReservas = [];
-        const minhasRes = listaReservas.filter(r => Number(r.usuario_id) === Number(usuarioAtual.id));
-
-        if (minhasRes.length === 0) {
-            containerReservas.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); font-size:0.85rem;">Nenhuma reserva realizada.</td></tr>';
-        } else {
-            containerReservas.innerHTML = '';
-            minhasRes.forEach(res => {
-                const livro = (acervoCompleto || []).find(l => Number(l.id) === Number(res.livro_id));
-                const dataFmt = res.data_reserva ? new Date(res.data_reserva).toLocaleDateString('pt-BR') : '-';
-                containerReservas.innerHTML += `
-                    <tr>
-                        <td><strong>${escaparHTML(livro ? (livro.titulo_principal || livro.tituloPrincipal) : 'Livro Removido')}</strong></td>
-                        <td>${dataFmt}</td>
-                        <td><strong>${escaparHTML(res.status)}</strong></td>
-                        <td>
-                            ${res.status === 'Pendente' ? `<button class="btn btn-danger" style="padding:2px 8px; font-size:0.75rem;" onclick="cancelarReserva(${res.id})">Cancelar</button>` : '-'}
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-    }
-}
-
+// Perfil (favoritos/reservas/feed): ver minha-area.js
+function carregarPerfilUsuario() {}
 
 // ---------- Modais: grupos, conversas diretas e livro ----------
 function abrirModalNovoGrupo() {
@@ -532,8 +471,61 @@ function alternarOrigemLivroChat(origem) {
 }
 
 
+// ---------- Limpar / excluir conversas ----------
+const chaveCorte = id => `venous_corte_${usuarioAtual.id}_${id}`;
+function corteChat(id) { try { return localStorage.getItem(chaveCorte(id)) || '1970-01-01T00:00:00Z'; } catch (_) { return '1970-01-01T00:00:00Z'; } }
+const confirmar = (t, x, r) => window.confirmarAcao ? window.confirmarAcao(t, x, r) : Promise.resolve(confirm(t + '\n' + x));
+const avisar = m => alert(m);
+function voltarListaChats() { $('chatShell')?.classList.remove('abrir'); }
+function resetarPainelChat() { chatAtivoSelecionado = null; sairDaSala(); voltarListaChats(); const c = $('painelChatAtivo'); if (c) c.innerHTML = '<div class="empty" style="margin:auto;border:0"><i class="fa-solid fa-comments"></i>Selecione ou crie uma conversa para começar.</div>'; renderizarListaChats(); }
+function gerenciarConversa(chat = chatAtivoSelecionado) {
+    if (!chat) return;
+    const dono = mesmoId(chat.criador_id, usuarioAtual.id) || usuarioAtual.cargo === 'bibliotecario', grupo = chat.tipo === 'grupo';
+    $('opcoesChat').innerHTML = `<p class="muted" style="margin-bottom:4px">${escaparHTML(chat.nome)}</p>
+<button class="opt" data-op="mim"><i class="fa-solid fa-eye-slash"></i><span><b>Limpar para mim</b><small>Oculta o histórico atual só para você; os outros continuam vendo.</small></span></button>
+${!grupo || dono ? `<button class="opt danger" data-op="todos"><i class="fa-solid fa-broom"></i><span><b>Apagar mensagens para todos</b><small>Remove todas as mensagens para todos os participantes.</small></span></button>` : ''}
+<button class="opt danger" data-op="sair"><i class="fa-solid fa-trash"></i><span><b>${grupo ? (dono ? 'Excluir clube' : 'Sair do clube') : 'Excluir conversa'}</b><small>${grupo && dono ? 'Remove o clube e todo o histórico para todos.' : 'Remove a conversa da sua lista.'}</small></span></button>`;
+    $('opcoesChat').onclick = async e => { const o = e.target.closest('[data-op]')?.dataset.op; if (!o) return; fecharModal('modalGerenciarChat'); await ({ mim: limparParaMim, todos: apagarParaTodos, sair: sairOuExcluir })[o](chat); };
+    $('modalGerenciarChat').classList.add('active');
+}
+async function limparParaMim(chat, silencioso) {
+    if (!silencioso && !await confirmar('Limpar conversa para você?', 'O histórico atual ficará oculto apenas para você.', 'Limpar')) return;
+    let t = new Date().toISOString();
+    try { const { data } = await supabaseClient.from('chat_mensagens').select('created_at').eq('chat_id', chat.id).order('created_at', { ascending: false }).limit(1); if (data?.[0]) t = data[0].created_at; } catch (_) {}
+    try { localStorage.setItem(chaveCorte(chat.id), t); localStorage.setItem(chaveLido(chat.id), t); } catch (_) {}
+    delete naoLidas[chat.id]; renderizarListaChats(); atualizarTitulo();
+    if (chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, chat.id)) carregarMensagens();
+    if (!silencioso) avisar('Conversa limpa.');
+}
+async function limparTodasConversas() {
+    if (!listaChatsUsuario.length) return avisar('Você não tem conversas.');
+    if (!await confirmar('Limpar todas as conversas?', 'O histórico de todas as suas conversas ficará oculto apenas para você.', 'Limpar todas')) return;
+    for (const c of listaChatsUsuario) await limparParaMim(c, true); avisar('Todas as conversas foram limpas.');
+}
+async function apagarParaTodos(chat) {
+    if (!await confirmar('Apagar mensagens para todos?', 'Todas as mensagens serão removidas para todos os participantes. Não dá para desfazer.', 'Apagar')) return;
+    const { error } = await supabaseClient.from('chat_mensagens').delete().eq('chat_id', chat.id);
+    if (error) return avisar('Erro ao apagar: ' + error.message);
+    delete naoLidas[chat.id]; if (chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, chat.id)) carregarMensagens(); renderizarListaChats(); atualizarTitulo(); avisar('Mensagens apagadas.');
+}
+async function sairOuExcluir(chat) {
+    const dono = mesmoId(chat.criador_id, usuarioAtual.id) || usuarioAtual.cargo === 'bibliotecario', apagarTudo = chat.tipo === 'grupo' && dono;
+    if (!await confirmar(apagarTudo ? 'Excluir clube?' : 'Remover conversa?', apagarTudo ? 'O clube e todo o histórico serão apagados para todos.' : 'Ela sairá da sua lista.', apagarTudo ? 'Excluir' : 'Remover')) return;
+    let erro;
+    if (apagarTudo) erro = (await supabaseClient.from('chats_grupos').delete().eq('id', chat.id)).error;
+    else {
+        erro = (await supabaseClient.from('chat_membros').delete().eq('chat_id', chat.id).eq('usuario_id', usuarioAtual.id)).error;
+        if (!erro) { const { count } = await supabaseClient.from('chat_membros').select('*', { count: 'exact', head: true }).eq('chat_id', chat.id); if (!count) await supabaseClient.from('chats_grupos').delete().eq('id', chat.id); }
+    }
+    if (erro) return avisar('Erro: ' + erro.message);
+    listaChatsUsuario = listaChatsUsuario.filter(c => !mesmoId(c.id, chat.id));
+    if (chatAtivoSelecionado && mesmoId(chatAtivoSelecionado.id, chat.id)) resetarPainelChat();
+    await carregarListaChats(); avisar(apagarTudo ? 'Clube excluído.' : 'Conversa removida.');
+}
+
 // ---------- Inicialização ----------
 document.addEventListener('DOMContentLoaded', () => {
+    $('chatBusca')?.addEventListener('input', renderizarListaChats);
     (window.appReady || Promise.resolve()).then(async () => { await carregarListaChats(); if ($('tab-perfil')) carregarPerfilUsuario(); });
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { marcarLidoAtivo(); sincronizar(); } });

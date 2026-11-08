@@ -189,3 +189,9 @@ tbody tr:hover { background: color-mix(in srgb, var(--bg-tertiary) 40%, transpar
 .chat-form input { flex: 1; padding: 12px 16px; }
 .chat-nome { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-badge { background: var(--accent-red); color: #fff; border-radius: 999px; font-size: .7rem; font-weight: 700; padding: 1px 7px; }
+
+/* Pré-registro */
+.pre-form .pw{display:flex;gap:6px}.pre-form .pw input{flex:1}
+.pre-msg{min-height:1em;font-size:.72rem;color:var(--accent-red)}
+.forca{height:5px;border-radius:5px;background:var(--bg-tertiary);overflow:hidden}.forca i{display:block;height:100%;width:0;transition:width .25s,background .25s}
+.pre-form button:disabled{opacity:.5;cursor:not-allowed}

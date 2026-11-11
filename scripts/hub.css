@@ -30,3 +30,4 @@
 .pre-msg{min-height:1em;font-size:.72rem;color:var(--accent-red)}
 #toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:grid;gap:8px;z-index:2000;width:min(92vw,380px)}.toast{background:var(--bg-card);border:1px solid var(--border-color);border-left:4px solid var(--ok);padding:10px 14px;border-radius:10px;box-shadow:0 6px 20px #0004}.toast.erro{border-left-color:var(--accent-red)}
 .acervo-tabs{margin:0 0 14px}
+.st{white-space:nowrap}

@@ -20,7 +20,7 @@
     document.body.classList.toggle('chat-aberto', chat);
     document.body.classList.toggle('sem-nav', [...document.querySelectorAll('.nav-tab')].filter(a => a.offsetParent).length <= 1);
     if (fab) fab.classList.toggle('on', mq.matches && !chat && !!$('#pane-feed')?.classList.contains('on'));
-    $('.tabs [aria-selected=true]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    { const t = $('.tabs [aria-selected=true]'), c = t?.parentElement; if (c) c.scrollTo({ left: t.offsetLeft - (c.clientWidth - t.clientWidth) / 2, behavior: 'smooth' }); }
   }
   let raf; const agendar = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { nav(); rotular(); estado(); }); };
   function iniciar() {

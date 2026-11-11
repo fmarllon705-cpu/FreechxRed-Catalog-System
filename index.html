@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
     <title>Início • Venous</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +16,11 @@
     <script src="scripts/registros.js" defer></script>
     <script src="scripts/gestao.js" defer></script>
     <script src="scripts/chat.js" defer></script>
+    <meta name="theme-color" content="#0369a1">
+    <link rel="stylesheet" href="scripts/hub.css">
+    <link rel="stylesheet" href="scripts/mobile.css">
+    <script src="scripts/menu.js" defer></script>
+    <script src="scripts/mobile.js" defer></script>
 </head>
 <body>
 
@@ -33,6 +38,7 @@
                 <div id="lblUserName" style="font-size: 0.85rem; font-weight: 600;">Visitante (Público)</div>
                 <span id="lblUserRole" class="role-badge role-usuario">USUÁRIO</span>
             </div>
+            <a href="suporte.html" class="btn-switch-user" title="Suporte e ajuda" aria-label="Suporte e ajuda"><i class="fa-solid fa-circle-question"></i></a>
             <button id="btnHeaderLogin" class="btn-switch-user" onclick="abrirModalLogin()">
                 <i class="fa-solid fa-right-to-bracket"></i> Entrar / Login
             </button>
@@ -42,17 +48,21 @@
 
 <nav class="main-nav">
     <div class="nav-container">
-        <a href="index.html" class="nav-tab active"><i class="fa-solid fa-house"></i> Home / Consulta</a>
-        <a href="minha-area.html" class="nav-tab" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
-        <a href="circulacao.html" class="nav-tab" id="tabNavCirculacao" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Circulação</a>
-        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-file-pen"></i> Catalogação</a>
-        <a href="suporte.html" class="nav-tab"><i class="fa-solid fa-headset"></i> Suporte</a>
-        <a href="usuarios.html" class="nav-tab" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-users-gear"></i> Gestão de Usuários</a>
-        <a href="lixeira.html" class="nav-tab" id="tabNavLixeira" style="display: none;"><i class="fa-solid fa-trash-can"></i> Lixeira</a>
+        <a href="index.html" class="nav-tab active" id="tabNavAcervo"><i class="fa-solid fa-book-open-reader"></i> Acervo</a>
+        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-layer-group"></i> Catalogação</a>
+        <a href="usuarios.html" class="nav-tab" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-chart-pie"></i> Gestão</a>
     </div>
 </nav>
 
 <main class="container">
+    <div class="tabs acervo-tabs" id="acervoTabs" style="display:none">
+        <a class="on" href="index.html"><i class="fa-solid fa-magnifying-glass"></i> Consulta</a>
+        <a href="minha-area.html#feed"><i class="fa-solid fa-newspaper"></i> Feed</a>
+        <a href="minha-area.html#favoritos"><i class="fa-solid fa-heart"></i> Favoritos</a>
+        <a href="minha-area.html#reservas"><i class="fa-solid fa-bookmark"></i> Reservas</a>
+        <a href="minha-area.html#chat"><i class="fa-solid fa-comments"></i> Chat</a>
+        <a href="minha-area.html#perfil"><i class="fa-solid fa-user-pen"></i> Perfil</a>
+    </div>
     <section class="tab-content active">
         <div class="card">
             <div class="card-header">

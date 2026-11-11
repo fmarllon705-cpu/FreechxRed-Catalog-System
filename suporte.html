@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
     <title>Suporte & Atendimento • Venous</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -10,6 +10,12 @@
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script defer src="scripts/script.js"></script>
     <script defer src="scripts/chat.js"></script>
+    <meta name="theme-color" content="#0369a1">
+    <link rel="stylesheet" href="scripts/hub.css">
+    <link rel="stylesheet" href="scripts/mobile.css">
+    <script src="scripts/hub.js" defer></script>
+    <script src="scripts/gestao-hub.js" defer></script>
+    <script src="scripts/mobile.js" defer></script>
 </head>
 <body>
 
@@ -26,34 +32,38 @@
 
 <nav class="main-nav">
     <div class="nav-container">
-        <a href="index.html" class="nav-tab active"><i class="fa-solid fa-house"></i> Home / Consulta</a>
-        <a href="minha-area.html" class="nav-tab" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
-        <a href="circulacao.html" class="nav-tab" id="tabNavCirculacao" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Circulação</a>
-        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-file-pen"></i> Catalogação</a>
-        <a href="suporte.html" class="nav-tab"><i class="fa-solid fa-headset"></i> Suporte</a>
-        <a href="usuarios.html" class="nav-tab" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-users-gear"></i> Gestão de Usuários</a>
-        <a href="lixeira.html" class="nav-tab" id="tabNavLixeira" style="display: none;"><i class="fa-solid fa-trash-can"></i> Lixeira</a>
+        <a href="index.html" class="nav-tab" id="tabNavAcervo"><i class="fa-solid fa-book-open-reader"></i> Acervo</a>
+        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-layer-group"></i> Catalogação</a>
+        <a href="usuarios.html" class="nav-tab" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-chart-pie"></i> Gestão</a>
     </div>
 </nav>
 
 <main class="container">
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title"><i class="fa-solid fa-headset"></i> Fale Conosco & Ajuda</span>
+    <div class="sup-grid">
+        <div class="card">
+            <div class="card-header"><span class="card-title"><i class="fa-solid fa-headset"></i> Fale conosco</span></div>
+            <div id="supOk" class="sucesso hidden"><i class="fa-solid fa-circle-check"></i><h3>Mensagem enviada!</h3><p class="muted">Nossa equipe responde em até 2 dias úteis. Se você tiver conta, acompanhe a resposta ao lado.</p><button class="btn btn-outline" id="supNovo" style="margin-top:14px">Enviar outra mensagem</button></div>
+            <form id="formSuporte" novalidate>
+                <div class="field"><label>Sobre o que é? *</label><div class="chips" id="supCats"></div></div>
+                <div class="form-grid">
+                    <div class="field"><label for="supNome">Seu nome *</label><input id="supNome" autocomplete="name" maxlength="80"><small class="pre-msg" data-for="supNome"></small></div>
+                    <div class="field"><label for="supEmail">E-mail para resposta *</label><input id="supEmail" type="email" autocomplete="email" maxlength="120"><small class="pre-msg" data-for="supEmail"></small></div>
+                </div>
+                <div class="field"><label for="supAssunto">Assunto *</label><input id="supAssunto" maxlength="100" placeholder="Ex.: Não consigo renovar um empréstimo"><small class="pre-msg" data-for="supAssunto"></small></div>
+                <div class="field"><label for="supMsg">Mensagem *</label><textarea id="supMsg" rows="5" maxlength="1000" placeholder="Conte o que aconteceu ou o que você precisa. Se for um problema, diga em qual página e o que você esperava ver."></textarea><small class="pre-msg" data-for="supMsg"></small><small id="supCnt">0/1000</small></div>
+                <button type="submit" class="btn btn-primary" id="btnSup" style="width:100%" disabled><i class="fa-solid fa-paper-plane"></i> Enviar mensagem</button>
+            </form>
         </div>
-        <form id="formSuporte" style="display:flex; flex-direction:column; gap:12px;">
-            <div class="form-group">
-                <label>Assunto</label>
-                <input type="text" placeholder="Ex: Dúvida sobre empréstimo ou doação">
+        <div>
+            <div class="card faq"><div class="card-header"><span class="card-title"><i class="fa-solid fa-circle-question"></i> Perguntas frequentes</span></div>
+                <details><summary>Como reservo um livro?</summary><p>Entre na sua conta, abra o livro no Acervo e toque em Reservar. A equipe avisa quando ele estiver disponível.</p></details>
+                <details><summary>Qual o prazo de devolução?</summary><p>O prazo é combinado no empréstimo (7 a 30 dias) e pode ser renovado pela equipe se não houver reservas.</p></details>
+                <details><summary>Posso doar livros à biblioteca?</summary><p>Sim! Escolha “Doação / permuta” ao lado e conte o que deseja doar. A equipe avalia o estado e a atualidade das obras.</p></details>
+                <details><summary>Esqueci minha senha</summary><p>Escolha “Minha conta” ao lado e informe seu usuário e e-mail cadastrados.</p></details>
+                <details><summary>Meu post no feed não apareceu</summary><p>Posts com links, fotos ou palavras ofensivas passam por revisão da equipe antes de serem publicados.</p></details>
             </div>
-            <div class="form-group">
-                <label>Mensagem / Feedback</label>
-                <textarea rows="4" placeholder="Escreva aqui sua mensagem ou avaliação do sistema..."></textarea>
-            </div>
-            <div class="btn-group">
-                <button type="button" class="btn btn-primary" onclick="alert('Mensagem enviada com sucesso!')"><i class="fa-solid fa-paper-plane"></i> Enviar Feedback</button>
-            </div>
-        </form>
+            <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-envelope-open-text"></i> Minhas mensagens</span></div><div id="minhasMsgs"></div></div>
+        </div>
     </div>
 </main>
 </body>

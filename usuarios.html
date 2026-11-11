@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
     <title>Gestão do Sistema • Venous</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,6 +11,12 @@
     <script src="scripts/script.js" defer></script>
     <script defer src="scripts/chat.js"></script>
     <script src="scripts/gestao.js" defer></script>
+    <meta name="theme-color" content="#0369a1">
+    <link rel="stylesheet" href="scripts/hub.css">
+    <link rel="stylesheet" href="scripts/mobile.css">
+    <script src="scripts/hub.js" defer></script>
+    <script src="scripts/gestao-hub.js" defer></script>
+    <script src="scripts/mobile.js" defer></script>
 </head>
 <body data-acesso="admin">
 
@@ -27,18 +33,20 @@
 
 <nav class="main-nav">
     <div class="nav-container">
-        <a href="index.html" class="nav-tab"><i class="fa-solid fa-house"></i> Home / Consulta</a>
-        <a href="minha-area.html" class="nav-tab" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
-        <a href="circulacao.html" class="nav-tab" id="tabNavCirculacao" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Circulação</a>
-        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-file-pen"></i> Catalogação</a>
-        <a href="suporte.html" class="nav-tab"><i class="fa-solid fa-headset"></i> Suporte</a>
-        <a href="usuarios.html" class="nav-tab active" id="tabNavUsuarios"><i class="fa-solid fa-users-gear"></i> Gestão de Usuários</a>
-        <a href="lixeira.html" class="nav-tab" id="tabNavLixeira" style="display: none;"><i class="fa-solid fa-trash-can"></i> Lixeira</a>
+        <a href="index.html" class="nav-tab" id="tabNavAcervo"><i class="fa-solid fa-book-open-reader"></i> Acervo</a>
+        <a href="catalogacao.html" class="nav-tab" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-layer-group"></i> Catalogação</a>
+        <a href="usuarios.html" class="nav-tab active" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-chart-pie"></i> Gestão</a>
     </div>
 </nav>
 
 <main class="container">
     <div id="contentUsuarios">
+        <div class="tabs" id="hubGestao" role="tablist">
+            <button type="button" data-gp="usuarios"><i class="fa-solid fa-users-gear"></i> Usuários</button>
+            <button type="button" data-gp="relatorios"><i class="fa-solid fa-chart-column"></i> Relatórios</button>
+            <button type="button" data-gp="mensagens"><i class="fa-solid fa-inbox"></i> Mensagens <span id="msgBadge" class="chat-badge hidden">0</span></button>
+        </div>
+        <div id="gpUsuarios">
         <div class="card">
             <div class="card-header">
                 <span class="card-title" id="tituloFormUsuario"><i class="fa-solid fa-user-plus"></i> Cadastrar Novo Usuário / Equipe</span>
@@ -98,6 +106,15 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+</div>
+        <div id="gpRelatorios" style="display:none">
+            <div class="toolbar"><select id="relPer"><option value="3">Últimos 3 meses</option><option value="6" selected>Últimos 6 meses</option><option value="12">Últimos 12 meses</option></select><button class="btn btn-outline" id="relExport"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button></div>
+            <div id="relConteudo"><div class="hint">Carregando relatórios…</div></div>
+        </div>
+        <div id="gpMensagens" style="display:none">
+            <div class="toolbar"><select id="msgFiltro"><option value="aberto">Abertas</option><option value="resolvido">Resolvidas</option><option value="">Todas</option></select></div>
+            <div id="msgLista"></div>
         </div>
     </div>
 </main>

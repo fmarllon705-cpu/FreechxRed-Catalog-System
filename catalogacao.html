@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
     <title>Catalogação & Acervo • Venous</title>
 
@@ -22,6 +22,12 @@
     <script src="scripts/registros.js" defer></script>
     <script src="scripts/gestao.js" defer></script>
     <script src="scripts/chat.js" defer></script>
+    <meta name="theme-color" content="#0369a1">
+    <link rel="stylesheet" href="scripts/hub.css">
+    <link rel="stylesheet" href="scripts/mobile.css">
+    <script src="scripts/hub.js" defer></script>
+    <script src="scripts/menu.js" defer></script>
+    <script src="scripts/mobile.js" defer></script>
 </head>
 <body data-acesso="staff">
 
@@ -43,6 +49,7 @@
                 <div id="lblUserName" style="font-size: 0.85rem; font-weight: 600;">Visitante (Público)</div>
                 <span id="lblUserRole" class="role-badge role-usuario">USUÁRIO</span>
             </div>
+            <a href="suporte.html" class="btn-switch-user" title="Suporte e ajuda" aria-label="Suporte e ajuda"><i class="fa-solid fa-circle-question"></i></a>
             <button id="btnHeaderLogin" class="btn-switch-user" onclick="abrirModalLogin()">
                 <i class="fa-solid fa-right-to-bracket"></i> Entrar / Login
             </button>
@@ -52,13 +59,9 @@
 
 <nav class="main-nav">
     <div class="nav-container">
-        <a href="index.html" class="nav-tab"><i class="fa-solid fa-house"></i> Home / Consulta</a>
-        <a href="minha-area.html" class="nav-tab" id="tabNavPerfil" style="display: none;"><i class="fa-solid fa-id-card-clip"></i> Minha Área</a>
-        <a href="circulacao.html" class="nav-tab" id="tabNavCirculacao" style="display: none;"><i class="fa-solid fa-arrows-rotate"></i> Circulação</a>
-        <a href="catalogacao.html" class="nav-tab active" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-file-pen"></i> Catalogação</a>
-        <a href="suporte.html" class="nav-tab"><i class="fa-solid fa-headset"></i> Suporte</a>
-        <a href="usuarios.html" class="nav-tab" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-users-gear"></i> Gestão de Usuários</a>
-        <a href="lixeira.html" class="nav-tab" id="tabNavLixeira" style="display: none;"><i class="fa-solid fa-trash-can"></i> Lixeira</a>
+        <a href="index.html" class="nav-tab" id="tabNavAcervo"><i class="fa-solid fa-book-open-reader"></i> Acervo</a>
+        <a href="catalogacao.html" class="nav-tab active" id="tabNavCatalogacao" style="display: none;"><i class="fa-solid fa-layer-group"></i> Catalogação</a>
+        <a href="usuarios.html" class="nav-tab" id="tabNavUsuarios" style="display: none;"><i class="fa-solid fa-chart-pie"></i> Gestão</a>
     </div>
 </nav>
 
@@ -71,24 +74,49 @@
         </div>
 
         <div id="contentCatalogacao">
-            <!-- SUB-BARRA DE NAVEGAÇÃO DA CATALOGAÇÃO -->
-            <div class="card" style="padding: 12px 20px; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <i class="fa-solid fa-folder-open fa-lg" style="color: var(--primary-color);"></i>
-                        <span style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">Módulo de Catalogação & Acervo</span>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" class="btn btn-primary sub-nav-btn" id="subTabBtnPlanilha" onclick="trocarSubAbaCatalogacao('planilha', event)">
-                            <i class="fa-solid fa-file-pen"></i> Planilha MARC21
-                        </button>
-                        <button type="button" class="btn btn-outline sub-nav-btn" id="subTabBtnEtiquetas" onclick="trocarSubAbaCatalogacao('etiquetas', event)">
-                            <i class="fa-solid fa-tags"></i> Gerar Etiquetas A4
-                        </button>
-                    </div>
+            <div class="tabs" id="hubCat" role="tablist">
+                <button type="button" data-sub="planilha"><i class="fa-solid fa-file-pen"></i> Catalogar</button>
+                <button type="button" data-sub="emprestimos"><i class="fa-solid fa-hand-holding-hand"></i> Empréstimos</button>
+                <button type="button" data-sub="reservas"><i class="fa-solid fa-bookmark"></i> Reservas</button>
+                <button type="button" data-sub="etiquetas"><i class="fa-solid fa-tags"></i> Etiquetas</button>
+                <button type="button" data-sub="desbaste"><i class="fa-solid fa-cloud-arrow-up cloud"></i> Desbaste</button>
+            </div>
+
+            <!-- EMPRÉSTIMOS -->
+            <div id="subTabContentEmprestimos" class="sub-tab-pane" style="display:none">
+                <div class="kpis"><div class="kpi"><b id="kAtivos">0</b><span>Empréstimos ativos</span></div><div class="kpi warn"><b id="kAtraso">0</b><span>Em atraso</span></div><div class="kpi"><b id="kBreve">0</b><span>Vencem em até 3 dias</span></div></div>
+                <div class="emp-grid">
+                    <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-hand-holding-hand"></i> Novo empréstimo</span></div>
+                        <form id="formEmprestimo" onsubmit="registrarEmprestimo(event)" novalidate>
+                            <div class="field"><label for="empBuscaLivro">1 · Livro</label><div id="empLivroSel"></div><input id="empBuscaLivro" autocomplete="off" placeholder="Título, autor ou tombo…"><div class="sugs" id="empSugLivro"></div><input type="hidden" id="selectLivroEmprestimo"></div>
+                            <div class="field"><label for="empBuscaUsr">2 · Leitor</label><div id="empUsrSel"></div><input id="empBuscaUsr" autocomplete="off" placeholder="Nome, e-mail ou usuário…"><div class="sugs" id="empSugUsr"></div><input type="hidden" id="selectUsuarioEmprestimo"></div>
+                            <div class="field"><label for="dataDevolucaoPrevista">3 · Prazo de devolução</label><div class="chips" id="empPrazos"></div><input type="date" id="dataDevolucaoPrevista" required></div>
+                            <div class="hint hidden" id="empResumo"></div>
+                            <button type="submit" class="btn btn-primary" id="btnEmp" style="width:100%" disabled><i class="fa-solid fa-key"></i> Confirmar empréstimo</button>
+                        </form></div>
+                    <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-list-check"></i> Empréstimos ativos</span></div>
+                        <div class="toolbar"><input id="empFiltroQ" type="search" placeholder="Buscar livro ou leitor…"><div class="chips" id="empChips"><button class="chip on" data-f="todos">Todos</button><button class="chip" data-f="prazo">No prazo</button><button class="chip" data-f="breve">Vencem logo</button><button class="chip" data-f="atraso">Atrasados</button></div></div>
+                        <div class="table-responsive"><table><thead><tr><th>Livro</th><th>Leitor</th><th>Devolução</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="tabelaEmprestimosBody"><tr><td colspan="5">Nenhum empréstimo ativo.</td></tr></tbody></table></div></div>
                 </div>
             </div>
+
+            <!-- RESERVAS -->
+            <div id="subTabContentReservas" class="sub-tab-pane" style="display:none">
+                <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-bookmark"></i> Reservas pendentes</span></div>
+                    <div class="table-responsive"><table><thead><tr><th>Livro</th><th>Leitor</th><th>Data</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="tbGestaoReservasBody"><tr><td colspan="5">Nenhuma reserva pendente.</td></tr></tbody></table></div></div>
+            </div>
+
+            <!-- DESBASTE -->
+            <div id="subTabContentDesbaste" class="sub-tab-pane" style="display:none">
+                <div class="des-hero"><i class="fa-solid fa-cloud-arrow-up"></i><div><h3>Desbaste do acervo</h3><p>Todo livro retirado do acervo é arquivado na nuvem com motivo e observação. O registro permanece para estatísticas, mesmo depois da retirada.</p></div></div>
+                <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-magnifying-glass"></i> 1 · Localizar o livro</span><a class="btn btn-outline btn-sm" href="lixeira.html"><i class="fa-solid fa-trash-can"></i> Lixeira de exclusões</a></div>
+                    <input id="desBusca" type="search" autocomplete="off" placeholder="Título, autor ou tombo…" style="width:100%"><div id="desResultados" style="margin-top:8px"></div></div>
+                <div class="kpis" id="desStats"></div>
+                <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-cloud"></i> Histórico de desbaste</span><button class="btn btn-outline btn-sm" id="desExport"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button></div>
+                    <div class="toolbar"><input id="desFQ" type="search" placeholder="Buscar título, tombo ou destino…"><select id="desFMot"><option value="">Todos os motivos</option><option value="espaco">Falta de espaço</option><option value="desatualizado">Desatualizado</option><option value="avariado">Avariado</option><option value="permuta">Permuta</option><option value="doacao">Doação</option></select><select id="desFPer"><option value="todos">Todo o período</option><option value="30">Últimos 30 dias</option><option value="180">Últimos 6 meses</option><option value="365">Últimos 12 meses</option></select></div>
+                    <div class="table-responsive"><table><thead><tr><th>Data</th><th>Livro</th><th>Motivo</th><th>Destino</th><th>Observação</th><th>Responsável</th><th></th></tr></thead><tbody id="desBody"></tbody></table></div></div>
+            </div>
+
 
             <!-- SUB-ABA 1: PLANILHA DE CATALOGAÇÃO MARC21 -->
             <div id="subTabContentPlanilha" class="sub-tab-pane">
@@ -441,6 +469,13 @@
     </section>
 </main>
 
+<div class="modal-overlay" id="modalDesbaste"><div class="modal-box" style="width:min(100%,580px)"><span class="close-modal" onclick="this.closest('.modal-overlay').classList.remove('active')">&times;</span>
+<h3><i class="fa-solid fa-cloud-arrow-up" style="color:#0ea5e9"></i> Desbastar livro</h3><div id="desLivro" style="margin:10px 0"></div>
+<label class="lbl">2 · Motivo *</label><div class="mot-grid" id="desMotivos"></div>
+<div class="field hidden" id="desDestinoBox"><label id="desDestinoLbl" for="desDestino">Destino *</label><input id="desDestino" maxlength="120" placeholder="Ex.: Escola Municipal Dom Pedro / Biblioteca do bairro"></div>
+<div class="field"><label for="desObs">3 · Observação <span id="desObsReq" class="muted"></span></label><textarea id="desObs" rows="3" maxlength="400" placeholder="Estado do livro, contexto da decisão, quantidade de exemplares…"></textarea><small id="desObsCnt">0/400</small></div>
+<div class="hint"><i class="fa-solid fa-cloud"></i> O registro fica guardado na nuvem para estatísticas, mesmo após a saída do acervo.</div>
+<div class="btn-group" style="justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').classList.remove('active')">Cancelar</button><button type="button" class="btn btn-danger" id="desConfirma" disabled><i class="fa-solid fa-cloud-arrow-up"></i> Desbastar e arquivar</button></div></div></div>
 <footer class="footer-bar">
     <p>© 2026 • Venous — Desenvolvido por malo. Todos os direitos reservados.</p>
 </footer>

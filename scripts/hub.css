@@ -1,0 +1,32 @@
+/* Venous • hubs (Acervo, Catalogação, Gestão, Suporte) */
+.tabs{display:flex;gap:4px;padding:4px;background:var(--bg-tertiary);border-radius:12px;overflow-x:auto;margin-bottom:16px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button,.tabs a{flex:1;min-width:max-content;border:0;background:none;color:var(--text-muted);font:inherit;font-weight:600;font-size:.85rem;padding:9px 14px;border-radius:9px;cursor:pointer;display:flex;gap:7px;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+.tabs button[aria-selected=true],.tabs a.on{background:var(--bg-card);color:var(--primary-color);box-shadow:var(--shadow)}
+.tabs .cloud{color:#0ea5e9}
+.hidden{display:none!important}.muted{color:var(--text-muted)}
+.field{display:grid;gap:6px;margin-bottom:14px}.field>label,.lbl{font-weight:600;font-size:.82rem}.field small{color:var(--text-muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{border:1px solid var(--border-color);background:none;color:var(--text-muted);font:inherit;font-size:.78rem;padding:6px 12px;border-radius:99px;cursor:pointer}.chip.on{background:var(--primary-color);border-color:var(--primary-color);color:#fff}
+.sugs{display:grid;gap:2px}.pick{display:grid;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;cursor:pointer}.pick:hover{background:var(--bg-tertiary)}.pick small{color:var(--text-muted)}
+.sel-chip{display:flex;gap:10px;align-items:center;justify-content:space-between;background:color-mix(in srgb,var(--primary-color) 12%,transparent);border-radius:10px;padding:8px 12px}.sel-chip button{border:0;background:none;color:inherit;cursor:pointer}
+.st{font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--bg-tertiary);display:inline-block}.st.Pendente{background:#f59e0b33;color:light-dark(#b45309,#fbbf24)}.st.Concluida{background:#10b98133;color:light-dark(#047857,#34d399)}.st.Cancelada{background:#ef444422;color:var(--accent-red)}
+.hint{font-size:.8rem;color:var(--text-muted);background:var(--bg-tertiary);border-radius:10px;padding:8px 12px;margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.emp-grid{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:16px;align-items:start}@media(max-width:900px){.emp-grid{grid-template-columns:1fr}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:12px}.kpi b{display:block;font-size:1.5rem}.kpi span{font-size:.72rem;color:var(--text-muted)}.kpi.warn b{color:var(--accent-red)}
+.cv{width:40px;height:56px;border-radius:4px;object-fit:cover;background:var(--bg-tertiary);flex:none;display:grid;place-items:center;color:var(--text-muted)}
+.des-hero{display:flex;gap:16px;align-items:center;background:linear-gradient(135deg,#0369a1,#0ea5e9);color:#fff;border-radius:14px;padding:18px;margin-bottom:16px}.des-hero i{font-size:2.6rem}.des-hero p{opacity:.9;font-size:.85rem}
+.des-item{display:flex;gap:10px;align-items:center;padding:8px;border-bottom:1px solid var(--border-color)}.des-item .i{flex:1;min-width:0}.des-item small{display:block;color:var(--text-muted)}
+.mot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0 14px}
+.mot{display:flex;gap:8px;align-items:center;text-align:left;border:2px solid var(--border-color);border-radius:10px;padding:10px;background:none;color:inherit;font:inherit;font-size:.82rem;cursor:pointer}.mot i{color:var(--c);font-size:1.1rem}.mot.on{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.mb{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c);white-space:nowrap}
+.bars{display:flex;gap:6px;align-items:flex-end;height:150px;padding-top:18px}.bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;min-width:0}.bar i{display:block;width:100%;border-radius:5px 5px 0 0;min-height:2px}.bar b{position:absolute;top:0;font-size:.68rem}.bar span{font-size:.62rem;color:var(--text-muted);margin-top:4px}
+.hb{display:grid;grid-template-columns:130px 1fr 34px;gap:8px;align-items:center;font-size:.78rem;margin:6px 0}.hb div{background:var(--bg-tertiary);border-radius:99px;height:10px;overflow:hidden}.hb i{display:block;height:100%;border-radius:99px}
+.rep-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.box{background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:14px}.box h4{font-size:.85rem;margin-bottom:10px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}.toolbar input,.toolbar select{flex:1;min-width:140px}
+.faq details{border-bottom:1px solid var(--border-color);padding:10px 0}.faq summary{cursor:pointer;font-weight:600}.faq p{margin-top:8px;color:var(--text-muted);font-size:.88rem}
+.sup-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}@media(max-width:900px){.sup-grid{grid-template-columns:1fr}}
+.msg-card{border:1px solid var(--border-color);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg-card)}.msg-card header{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;padding:0;margin-bottom:6px;background:none;border:0}.msg-card .resp{background:var(--bg-tertiary);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:.85rem}
+.sucesso{text-align:center;padding:30px 10px}.sucesso i{font-size:2.5rem;color:var(--ok)}
+.pre-msg{min-height:1em;font-size:.72rem;color:var(--accent-red)}
+#toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:grid;gap:8px;z-index:2000;width:min(92vw,380px)}.toast{background:var(--bg-card);border:1px solid var(--border-color);border-left:4px solid var(--ok);padding:10px 14px;border-radius:10px;box-shadow:0 6px 20px #0004}.toast.erro{border-left-color:var(--accent-red)}
+.acervo-tabs{margin:0 0 14px}

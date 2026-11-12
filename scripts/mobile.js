@@ -1,6 +1,6 @@
 // Venous • comportamentos mobile: rótulos curtos na navegação, tabelas em cartões, botão flutuante, chat em tela cheia e gestos
 (() => {
-  const mq = matchMedia('(max-width:768px)'), CURTO = { 'Home / Consulta': 'Início', 'Minha Área': 'Minha área', 'Gestão de Usuários': 'Usuários', 'Circulação': 'Circulação' };
+  const mq = matchMedia('(max-width:768px), (hover:none) and (pointer:coarse) and (max-width:1100px)'), CURTO = { 'Home / Consulta': 'Início', 'Minha Área': 'Minha área', 'Gestão de Usuários': 'Usuários', 'Circulação': 'Circulação' };
   const $ = s => document.querySelector(s);
   function nav() {
     document.querySelectorAll('.nav-tab').forEach(a => {

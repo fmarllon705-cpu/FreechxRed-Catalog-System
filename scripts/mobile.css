@@ -1,5 +1,5 @@
 /* Venous • camada mobile (≤768px). Carregada por último; não altera o desktop. */
-@media (max-width:768px){
+@media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){
   body{padding-bottom:calc(66px + env(safe-area-inset-bottom));-webkit-tap-highlight-color:transparent}
   body.chat-aberto{padding-bottom:0}
   /* cabeçalho compacto */
@@ -72,10 +72,12 @@
   #fabPost{position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:880;width:56px;height:56px;border-radius:50%;border:0;background:var(--primary-color);color:#fff;font-size:1.3rem;box-shadow:0 6px 18px #0005;display:none;cursor:pointer}
   #fabPost.on{display:grid;place-items:center}#fabPost:active{transform:scale(.92)}
 }
-@media (min-width:769px){#fabPost{display:none!important}}
-@media(max-width:768px){body.sem-nav .main-nav{display:none!important}body.sem-nav{padding-bottom:16px}#toasts{bottom:calc(76px + env(safe-area-inset-bottom))}body.sem-nav #toasts{bottom:16px}.tabs{margin-bottom:12px}.emp-grid,.sup-grid{gap:12px}.hb{grid-template-columns:96px 1fr 28px}.mot-grid{grid-template-columns:1fr 1fr}.des-hero{flex-direction:column;text-align:center}}
-@media (max-width:768px){
+#fabPost{display:none}
+@media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){body.sem-nav .main-nav{display:none!important}body.sem-nav{padding-bottom:16px}#toasts{bottom:calc(76px + env(safe-area-inset-bottom))}body.sem-nav #toasts{bottom:16px}.tabs{margin-bottom:12px}.emp-grid,.sup-grid{gap:12px}.hb{grid-template-columns:96px 1fr 28px}.mot-grid{grid-template-columns:1fr 1fr}.des-hero{flex-direction:column;text-align:center}}
+@media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){
   .kpis{grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.kpi{padding:8px 10px;border-radius:10px}.kpi b{font-size:1.15rem}.kpi span{font-size:.62rem;line-height:1.2;display:block}
   .rep-grid{grid-template-columns:1fr}.bars{height:120px}
   .tabs{scroll-snap-type:x proximity}.tabs>*{scroll-snap-align:center}
 }
+
+@media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){.feed-grid,.emp-grid,.sup-grid{grid-template-columns:1fr}.container{align-content:start}}

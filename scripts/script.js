@@ -67,7 +67,7 @@ function garantirModaisLogin() {
 <button type="button" class="btn btn-outline" onclick="abrirModalPreCadastro()">Não tem conta? Faça seu pré-registo</button></div></form></div></div>
 <div class="modal-overlay" id="modalPreCadastro"><div class="modal-box"><span class="close-modal" onclick="fecharModalPreCadastro()">&times;</span>
 <h3><i class="fa-solid fa-id-card"></i> Crie sua conta</h3><p class="muted" style="font-size:.8rem">Acesso online imediato. Para empréstimos físicos, valide o cadastro na biblioteca.</p>
-<form id="formPreCadastro" onsubmit="realizarPreCadastro(event)" oninput="validarPreCadastro()" class="form-grid pre-form" style="margin-top:12px" novalidate>
+<form id="formPreCadastro" onsubmit="realizarPreCadastro(event)" oninput="validarPreCadastro(false)" class="form-grid pre-form" style="margin-top:12px" novalidate>
 <div class="form-group full-width"><label for="preNome">Nome completo *</label><input id="preNome" required autocomplete="name" placeholder="Ex.: Maria Souza"><small class="pre-msg" data-for="preNome"></small></div>
 <div class="form-group"><label for="preUsuario">Nome de usuário *</label><input id="preUsuario" required autocomplete="username" placeholder="maria.souza" maxlength="24"><small class="pre-msg" data-for="preUsuario"></small></div>
 <div class="form-group"><label for="preTelefone">Telefone (opcional)</label><input id="preTelefone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(91) 99999-9999"><small class="pre-msg" data-for="preTelefone"></small></div>
@@ -75,7 +75,8 @@ function garantirModaisLogin() {
 <div class="form-group full-width"><label for="preSenha">Senha *</label><div class="pw"><input type="password" id="preSenha" required autocomplete="new-password" placeholder="Mínimo 8 caracteres"><button type="button" class="btn btn-outline btn-sm" onclick="alternarSenhaPre()" aria-label="Mostrar ou ocultar senha"><i class="fa-solid fa-eye"></i></button></div><div class="forca"><i id="preForca"></i></div><small class="pre-msg" data-for="preSenha"></small></div>
 <div class="form-group full-width"><label for="preSenha2">Confirmar senha *</label><input type="password" id="preSenha2" required autocomplete="new-password"><small class="pre-msg" data-for="preSenha2"></small></div>
 <label class="full-width" style="display:flex;gap:8px;font-size:.8rem;align-items:flex-start"><input type="checkbox" id="preTermos" required> <span>Aceito as regras de convivência: sem conteúdo ofensivo, spam ou desrespeito. Publicações são moderadas pela equipe da biblioteca.</span></label>
-<button class="btn btn-primary full-width" id="btnPreCadastro" type="submit" disabled>Criar conta</button></form></div></div>`);
+<div id="preErro" class="hint hidden full-width" style="color:var(--accent-red)" role="alert"></div>
+<button class="btn btn-primary full-width" id="btnPreCadastro" type="submit">Criar conta</button></form></div></div>`);
 }
 
 function init() {

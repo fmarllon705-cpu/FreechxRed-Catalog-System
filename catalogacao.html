@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="scripts/hub.css">
     <link rel="stylesheet" href="scripts/mobile.css">
     <script src="scripts/hub.js" defer></script>
+    <script src="scripts/etiquetas.js" defer></script>
     <script src="scripts/menu.js" defer></script>
     <script src="scripts/mobile.js" defer></script>
 </head>
@@ -421,48 +422,29 @@
 
             <!-- SUB-ABA 2: GERADOR DE ETIQUETAS E FOLHA A4 -->
             <div id="subTabContentEtiquetas" class="sub-tab-pane" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title"><i class="fa-solid fa-tags"></i> Gerador de Etiquetas e Folha A4 em Lote</span>
+                <div class="etq-grid">
+                    <div class="etq-col">
+                        <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-magnifying-glass"></i> Pesquisa de etiquetas</span></div>
+                            <div class="toolbar"><input id="etqQ" type="search" placeholder="Contendo o texto…"><select id="etqCampo"><option value="all">Qualquer campo</option><option value="title">Título</option><option value="author">Autor</option><option value="tombo">Tombo</option></select><select id="etqMat"><option value="">Todos os materiais</option></select></div>
+                            <label class="chk"><input type="checkbox" id="etqNovas"> Só exemplares que nunca tiveram etiqueta impressa</label>
+                            <div class="toolbar" style="margin-top:12px;margin-bottom:0"><button class="btn btn-primary" id="etqListar"><i class="fa-solid fa-list"></i> Listar / Pesquisar</button><button class="btn btn-outline" id="etqRecentes"><i class="fa-solid fa-star"></i> Recém-catalogados</button><button class="btn btn-outline" id="etqLimparBusca">Limpar</button></div></div>
+                        <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-books"></i> Resultados (<span id="etqCount">0</span>)</span><button class="btn btn-outline btn-sm" id="etqSelPag">Selecionar desta página</button></div>
+                            <div id="etqLista"></div><button class="btn btn-outline hidden" id="etqMais" style="width:100%;margin-top:10px">Carregar mais</button></div>
                     </div>
-
-                    <div class="form-grid" style="gap: 16px; margin-top: 15px; margin-bottom: 20px;">
-                        <div class="form-group full-width">
-                            <label for="selectLivrosEtiquetasMultiplas" style="font-weight: 600; color: #f8fafc; font-size: 0.9rem;">
-                                <i class="fa-solid fa-list-check" style="color: #38bdf8;"></i> Selecione as Obras para a Folha A4 (Até 5 etiquetas por página)
-                            </label>
-                            <select id="selectLivrosEtiquetasMultiplas" multiple style="width: 100%; height: 140px; padding: 10px; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px; font-family: monospace;" onchange="atualizarPreviewFolhaA4()">
-                                <option value="">Carregando acervo do banco de dados...</option>
-                            </select>
-                            <small style="color: var(--text-muted); margin-top: 6px; display: block;">
-                                💡 <strong>Dica:</strong> Segure <kbd>CTRL</kbd> para selecionar vários livros. A pré-visualização abaixo simulará a folha A4.
-                            </small>
-                        </div>
-                    </div>
-
-                    <div class="btn-group" style="margin-bottom: 25px;">
-                        <button type="button" class="btn btn-primary" onclick="gerarFolhaA4Etiquetas()" style="padding: 10px 20px; font-size: 0.95rem;">
-                            <i class="fa-solid fa-print"></i> Imprimir Folha A4 com Etiquetas Selecionadas
-                        </button>
-                    </div>
-
-                    <div style="background: var(--bg-secondary); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">
-                            <i class="fa-solid fa-file-lines"></i> PRÉ-VISUALIZAÇÃO DA FOLHA A4 (SIMULAÇÃO)
-                        </span>
-
-                        <div id="previewFolhaA4" style="background: #ffffff; color: #111827; border: 1px solid #94a3b8; width: 360px; min-height: 520px; padding: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 10px; font-family: 'Courier New', Courier, monospace; overflow-y: auto;">
-                            <div style="text-align: center; color: #64748b; font-size: 0.75rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 6px; font-weight: bold;">
-                                [ Folha A4 — Capacidade: Até 5 Etiquetas ]
-                            </div>
-                            <div id="previewEtiquetasContainer" style="display: flex; flex-direction: column; gap: 8px;">
-                                <div style="text-align: center; color: #94a3b8; font-size: 0.8rem; padding: 50px 0;">
-                                    Nenhum livro selecionado acima.
-                                </div>
-                            </div>
-                        </div>
+                    <div class="etq-col">
+                        <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-tags"></i> Etiquetas para imprimir</span><button class="btn btn-outline btn-sm" id="etqLimparSel">Limpar</button></div>
+                            <div id="etqSel"></div><div class="hint" id="etqResumo"></div>
+                            <label class="cf"><span>Começar na etiqueta nº (reaproveitar folha já usada)</span><input type="number" id="etqInicio" min="1" value="1"></label>
+                            <div class="btn-group" style="margin-top:12px"><button class="btn btn-primary" id="etqGerar" disabled><i class="fa-solid fa-file-pdf"></i> Gerar PDF (A4)</button><button class="btn btn-outline" id="etqImprimir" disabled><i class="fa-solid fa-print"></i> Abrir para imprimir</button></div></div>
+                        <details class="card" id="etqCfg" open><summary class="etq-sum"><i class="fa-solid fa-sliders"></i> Posição e tamanho na folha A4 <small class="muted">(mm)</small></summary>
+                            <div class="chips" style="margin-bottom:12px"><button type="button" class="chip" data-preset="metade">Tamanho 50 × 20 mm (metade)</button><button type="button" class="chip" data-preset="grande">Tamanho 100 × 40 mm</button></div>
+                            <div class="cf-grid" id="etqCfgFolha"></div><div class="lbl" style="margin:14px 0 6px">Ajuste fino de cada bloco <small class="muted">→ direita · ↓ baixo (use negativo para o contrário)</small></div><div id="etqCfgAjuste"></div>
+                            <button class="btn btn-outline btn-sm" id="etqPadrao" style="margin-top:12px"><i class="fa-solid fa-rotate-left"></i> Restaurar padrão</button></details>
+                        <div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-file-lines"></i> Pré-visualização da folha A4</span><span class="etq-pg"><button class="btn btn-outline btn-sm" id="etqPrevV" aria-label="Página anterior">‹</button><small id="etqPagTxt">Página 1 de 1</small><button class="btn btn-outline btn-sm" id="etqPrevN" aria-label="Próxima página">›</button></span></div>
+                            <div id="etqPrev" class="etq-prev"></div></div>
                     </div>
                 </div>
+                <div id="etqBar" class="etq-bar"><span><b id="etqBarN">0</b> etiqueta(s)</span><button class="btn btn-primary" id="etqBarGerar"><i class="fa-solid fa-file-pdf"></i> Gerar PDF</button></div>
             </div>
 
         </div>

@@ -195,3 +195,4 @@ tbody tr:hover { background: color-mix(in srgb, var(--bg-tertiary) 40%, transpar
 .pre-msg{min-height:1em;font-size:.72rem;color:var(--accent-red)}
 .forca{height:5px;border-radius:5px;background:var(--bg-tertiary);overflow:hidden}.forca i{display:block;height:100%;width:0;transition:width .25s,background .25s}
 .pre-form button:disabled{opacity:.5;cursor:not-allowed}
+#preErro{font-size:.82rem;padding:8px 12px;border-radius:10px;background:#ef44441a;margin:6px 0}#preErro.hidden{display:none}

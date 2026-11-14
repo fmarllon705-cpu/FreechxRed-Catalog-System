@@ -26,6 +26,7 @@ window.trocarSubAbaCatalogacao = (aba, ev) => {
   Promise.resolve(window.appReady).then(async () => {
     if (aba === 'emprestimos') { populaSelectsEmprestimo(); await carregarEmprestimos(); empResumo(); }
     if (aba === 'reservas') { await carregarReservas(); renderizarGestaoReservas(); }
+    if (aba === 'etiquetas') window.initEtiquetas?.();
     if (aba === 'desbaste') { await carregarDesbastes(); renderDes(); desBuscar(); }
   });
 };

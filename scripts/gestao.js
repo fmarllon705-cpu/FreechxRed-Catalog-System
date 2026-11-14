@@ -583,8 +583,8 @@ function fecharModalPreCadastro() {
 
 const PRE = id => document.getElementById(id);
 function alternarSenhaPre() { const i = PRE('preSenha'); i.type = i.type === 'password' ? 'text' : 'password'; PRE('preSenha2').type = i.type; }
-function validarPreCadastro() {
-    const v = id => PRE(id).value.trim(), erro = {}, f = PRE('preSenha').value;
+function validarPreCadastro(mostrar) {
+    const v = id => PRE(id).value.trim(), erro = {}, f = PRE('preSenha').value, dica = {};
     if (v('preNome').split(/\s+/).filter(Boolean).length < 2) erro.preNome = 'Informe nome e sobrenome.';
     if (!/^[a-z0-9._-]{3,24}$/i.test(v('preUsuario'))) erro.preUsuario = '3–24 caracteres: letras, números, ponto, _ ou -.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v('preEmail'))) erro.preEmail = 'E-mail inválido.';
@@ -593,27 +593,34 @@ function validarPreCadastro() {
     if (d && d.length < 10) erro.preTelefone = 'Telefone incompleto.';
     const pts = [f.length >= 8, /[a-z]/.test(f) && /[A-Z]/.test(f), /\d/.test(f), /[^\w\s]/.test(f)].filter(Boolean).length;
     PRE('preForca').style.cssText = `width:${f ? pts * 25 : 0}%;background:${pts < 3 ? '#ef4444' : pts < 4 ? '#f59e0b' : '#10b981'}`;
-    if (f.length < 8) erro.preSenha = 'Use pelo menos 8 caracteres.'; else if (pts < 3) erro.preSenha = 'Senha fraca: misture maiúsculas, números ou símbolos.';
+    if (f.length < 8) erro.preSenha = 'Use pelo menos 8 caracteres.'; else if (pts < 3) dica.preSenha = 'Dica: misture maiúsculas, números ou símbolos para ficar mais forte.';
     if (PRE('preSenha2').value !== f) erro.preSenha2 = 'As senhas não coincidem.';
-    document.querySelectorAll('.pre-msg').forEach(m => { m.textContent = PRE(m.dataset.for).value ? (erro[m.dataset.for] || '') : ''; });
-    const ok = !Object.keys(erro).length && PRE('preTermos').checked;
-    PRE('btnPreCadastro').disabled = !ok; return ok;
+    document.querySelectorAll('.pre-msg').forEach(m => { const k = m.dataset.for; m.textContent = (mostrar || PRE(k).value) ? (erro[k] || dica[k] || '') : ''; });
+    if (!PRE('preTermos').checked) erro.preTermos = 'Aceite as regras de convivência.';
+    return erro;
 }
 async function realizarPreCadastro(event) {
-    event.preventDefault(); if (!validarPreCadastro()) return;
-    const btn = PRE('btnPreCadastro'), v = id => PRE(id).value.trim(), usuario = v('preUsuario'), email = v('preEmail').toLowerCase(), lim = x => x.replace(/[,()*]/g, '');
+    event.preventDefault(); const box = PRE('preErro'), mostrar = m => { box.textContent = m; box.classList.remove('hidden'); };
+    box.classList.add('hidden'); const erro = validarPreCadastro(true), chaves = Object.keys(erro);
+    if (chaves.length) { mostrar(chaves.length === 1 && erro.preTermos ? 'Marque a caixa de aceite das regras para continuar.' : 'Corrija os campos destacados para continuar.'); PRE(chaves[0])?.focus(); return; }
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) return mostrar('Sem conexão com o banco de dados. Verifique a internet e tente novamente.');
+    const btn = PRE('btnPreCadastro'), v = id => PRE(id).value.trim(), nome = v('preNome'), usuario = v('preUsuario'), email = v('preEmail').toLowerCase(), tel = v('preTelefone');
     btn.disabled = true; btn.textContent = 'Criando conta…';
     try {
-        const { data: ja } = await supabaseClient.from('usuarios_sistema').select('usuario,email').or(`usuario.eq.${lim(usuario)},email.eq.${lim(email)}`).limit(1);
-        if (ja?.length) { const m = (ja[0].email || '').toLowerCase() === email ? 'preEmail' : 'preUsuario'; document.querySelector(`[data-for="${m}"]`).textContent = m === 'preEmail' ? 'E-mail já cadastrado.' : 'Nome de usuário indisponível.'; PRE(m).focus(); return; }
-        const { error } = await supabaseClient.from('usuarios_sistema').insert([{ nome: v('preNome'), usuario, email, telefone: v('preTelefone') || null, senha: PRE('preSenha').value, cargo: 'usuario', presencial_validado: false }]);
+        for (const [col, val, msg, campo] of [['usuario', usuario, 'Nome de usuário indisponível.', 'preUsuario'], ['email', email, 'E-mail já cadastrado.', 'preEmail']]) {
+            const { data } = await supabaseClient.from('usuarios_sistema').select('id').eq(col, val).limit(1);
+            if (data?.length) { document.querySelector(`[data-for="${campo}"]`).textContent = msg; PRE(campo).focus(); return mostrar(msg); }
+        }
+        const base = { nome, usuario, email, senha: PRE('preSenha').value, cargo: 'usuario', presencial_validado: false };
+        let { error } = await supabaseClient.from('usuarios_sistema').insert([tel ? { ...base, telefone: tel } : base]);
+        if (error && tel && /telefone|column|schema/i.test(error.message || '')) ({ error } = await supabaseClient.from('usuarios_sistema').insert([base]));   // coluna telefone pode não existir
         if (error) throw error;
-        alert('Conta criada! Entre com seu usuário e senha. Para empréstimos físicos, valide o cadastro na biblioteca.');
-        PRE('formPreCadastro').reset(); fecharModalPreCadastro();
+        alert('Conta criada com sucesso! Entre com seu usuário e senha. Para empréstimos físicos, valide o cadastro na biblioteca.');
+        PRE('formPreCadastro').reset(); validarPreCadastro(false); fecharModalPreCadastro();
         if (typeof carregarUsuarios === 'function') carregarUsuarios();
         abrirModalLogin();
     } catch (error) {
         console.error('Erro no pré-registro:', error);
-        alert('Erro ao criar conta: ' + (error.message || 'tente novamente.'));
-    } finally { btn.textContent = 'Criar conta'; validarPreCadastro(); }
+        mostrar(error.code === '23505' ? 'Usuário ou e-mail já cadastrado.' : (error.code === '42501' || /row-level security/i.test(error.message || '')) ? 'O banco recusou o cadastro (permissão/RLS). Peça ao administrador para permitir INSERT em usuarios_sistema.' : 'Não foi possível criar a conta: ' + (error.message || 'tente novamente.'));
+    } finally { btn.disabled = false; btn.textContent = 'Criar conta'; }
 }

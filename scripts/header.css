@@ -1,0 +1,26 @@
+/* R.A.I.L.D.A • cabeçalho compacto: nome do sistema pequeno + menu do usuário em dropdown */
+header{padding:8px 14px}
+.header-content{flex-wrap:nowrap;gap:10px}
+.logo-box{gap:10px;text-decoration:none;color:inherit;min-width:0}
+.logo-box h1{font-size:1.05rem;letter-spacing:.06em;margin:0;white-space:nowrap}
+.logo-box h3{display:none}
+@media(min-width:992px){.logo-box h3{display:block;font-size:.7rem;margin:0}}
+.user-panel{gap:6px;flex-wrap:nowrap;flex:none}
+.dropdown{position:relative}
+.dropdown-menu{position:absolute;display:none;z-index:1500;min-width:230px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:10px;box-shadow:0 10px 28px #0004;margin-top:6px;right:0;top:100%}
+.dropdown-menu.show{display:block}
+.rl-avatar{display:flex;align-items:center;gap:8px;background:none;border:1px solid var(--border-color);color:inherit;border-radius:99px;padding:4px 10px 4px 8px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;max-width:170px}
+.rl-avatar:hover{background:var(--bg-tertiary)}.rl-avatar .rl-first{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rl-seta{font-size:.6rem;opacity:.6}
+.rl-menu .rl-id{padding:4px 6px 10px;border-bottom:1px solid var(--border-color);margin-bottom:6px;line-height:1.3}
+.rl-menu .rl-slot{display:grid;gap:2px}
+.rl-menu .btn-switch-user,.rl-menu .rl-link{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:9px 8px;border-radius:8px;text-align:left;color:inherit;text-decoration:none;font:inherit;font-size:.9rem;cursor:pointer;min-height:40px}
+.rl-menu .btn-switch-user:hover,.rl-menu .rl-link:hover{background:var(--bg-tertiary)}
+.rl-menu #btnTema::after{content:'Alternar tema'}
+#btnHeaderLogin.rl-login{white-space:nowrap}
+@media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){
+  header{padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top))}
+  .logo-box h1{font-size:.95rem}
+  #btnHeaderLogin.rl-login[data-estado=logado]{font-size:0;padding:7px 10px}#btnHeaderLogin.rl-login[data-estado=logado] i{font-size:.95rem}
+  #btnHeaderLogin.rl-login[data-estado=guest]{padding:6px 10px;font-size:.8rem}
+  .rl-menu{position:fixed;left:10px;right:10px;top:50px;min-width:0}
+}

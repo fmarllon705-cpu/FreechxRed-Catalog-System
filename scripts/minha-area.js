@@ -6,13 +6,15 @@ const LK = 'venous_feed_local', eu = () => usuarioAtual || {}, logado = () => eu
 const livro = id => (acervoCompleto || []).find(l => +l.id === +id);
 const tit = l => l.titulo_principal || l.tituloPrincipal || 'Sem título', capa = l => l.capa_url || l.capaUrl || '', aut = l => l.nome_pessoal || l.responsabilidade || '';
 const cv = l => capa(l) ? `<img class="cv" src="${esc(capa(l))}" alt="" onerror="this.style.visibility='hidden'">` : '<div class="cv"><i class="fa-solid fa-book"></i></div>';
-const OKURL = u => /^(https:\/\/|data:image\/)/.test(u || ''), MODERAR_MIDIA = true, GENEROS = ['Romance', 'Fantasia', 'Ficção científica', 'Terror', 'Mistério', 'Biografia', 'História', 'Poesia', 'Autoajuda', 'Infantil', 'HQ/Mangá', 'Técnico'];
+const OKURL = u => /^(https:\/\/|data:image\/)/.test(u || ''), MODERAR_MIDIA = true, CONFIAVEL = /^https:\/\/(media\d*\.giphy\.com|i\.giphy\.com|media\.tenor\.com)\//, GENEROS = ['Romance', 'Fantasia', 'Ficção científica', 'Terror', 'Mistério', 'Biografia', 'História', 'Poesia', 'Autoajuda', 'Infantil', 'HQ/Mangá', 'Técnico'];
 let PERFIS = {}, perfilLocal = false, fotoTmp = null, gen = [];
 const avIn = (n, foto) => foto && OKURL(foto) ? `<img src="${esc(foto)}" alt="">` : esc((n || '?')[0].toUpperCase());
 const av = (n, id, semLink, foto) => `<div class="av"${semLink ? ' style="width:88px;height:88px;font-size:2rem;margin:auto;--h:' + (Number(id) * 47) % 360 + '"' : ` data-act="perfil" data-u="${Number(id)}" style="--h:${(Number(id) * 47) % 360}"`}>${avIn(n, foto === undefined ? PERFIS[id]?.foto : foto)}</div>`;
 const livrosDe = p => p.livros?.length ? p.livros : [...(p.livro_id ? [{ id: p.livro_id }] : []), ...(p.livro_externo_titulo ? [{ ext: p.livro_externo_titulo }] : [])];
 const blocoLivros = (p, acoes) => livrosDe(p).map(x => { const l = x.id ? livro(x.id) : null; return `<div class="post-book">${l ? cv(l) : '<div class="cv"><i class="fa-solid fa-book"></i></div>'}<div class="i"><b>${esc(l ? tit(l) : x.ext || 'Livro')}</b><small>${esc(l ? aut(l) : 'Livro externo')}</small></div>${acoes && l ? `<button class="btn btn-outline btn-sm" data-act="fav" data-l="${l.id}"><i class="fa-solid fa-heart"></i></button><button class="btn btn-primary btn-sm" data-act="res" data-l="${l.id}">Reservar</button>` : ''}</div>`; }).join('');
 const blocoMidia = p => { const m = (p.midias || []).filter(OKURL); return m.length ? `<div class="midias${m.length === 1 ? ' u' : ''}">${m.map(u => `<img data-act="zoom" src="${esc(u)}" alt="Mídia do post" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>` : ''; };
+const blocoProgresso = p => { const g = p.progresso; if (!g) return ''; const capa = g.capa && OKURL(g.capa) ? `<img class="cv" src="${esc(g.capa)}" alt="" onerror="this.style.visibility='hidden'">` : '<div class="cv"><i class="fa-solid fa-book"></i></div>';
+  return `<div class="prog-card">${capa}<div class="i"><b>${esc(g.titulo)}</b><small>${esc(g.autor || '')}</small><div class="rd-prog"><i style="width:${Math.min(100, +g.pct || 0)}%"></i></div><div class="prog-st"><span>${g.concluido ? 'Concluído 🎉' : (+g.pct || 0) + '% concluído'}</span>${g.total ? `<span>${+g.pagina_atual || 0}/${+g.total} págs.</span>` : ''}<span>${+g.paginas_hoje || 0} pág. hoje</span>${g.ritmo ? `<span>~${+g.ritmo} pág/dia</span>` : ''}</div></div></div>`; };
 const lerImg = (f, max, q, quad) => new Promise((ok, no) => {
   if (f.type === 'image/gif' && !quad) { if (f.size > 1.5e6) return no('GIF acima de 1,5 MB.'); const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no('Falha ao ler o arquivo.'); return r.readAsDataURL(f); }
   const u = URL.createObjectURL(f), im = new Image(); im.onerror = () => no('Imagem inválida.');
@@ -95,10 +97,21 @@ async function atualizar(p) { if (local) return salvarLocal(); const { error } =
 async function publicar() {
   const texto = $('compTxt').value.trim(); if ((!texto && !midias.length) || !logado()) return;
   const p = { usuario_id: eu().id, nome_usuario: eu().nome, tipo, texto, livro_id: anexos.find(a => a.id)?.id ?? null, livro_externo_titulo: anexos.find(a => a.externo)?.externo || null, livros: anexos.map(a => a.id ? { id: a.id } : { ext: a.externo }), midias, nota: tipo === 'resenha' && nota ? nota : null, curtidas: [], comentarios: [], denuncias: [], status: 'publicado', motivo: null };
-  const susp = STAFF() ? '' : suspeito(texto) || (MODERAR_MIDIA && midias.length ? 'Contém foto/GIF (revisão prévia)' : ''); if (susp) { p.status = 'pendente'; p.motivo = susp; }
+  const susp = STAFF() ? '' : suspeito(texto) || (MODERAR_MIDIA && midias.some(u => !CONFIAVEL.test(u)) ? 'Contém foto/GIF (revisão prévia)' : ''); if (susp) { p.status = 'pendente'; p.motivo = susp; }
   if (local) { posts.unshift({ ...p, id: Date.now(), created_at: new Date().toISOString() }); salvarLocal(); }
   else { const { data, error } = await supabaseClient.from('feed_posts').insert([p]).select().single(); if (error) return toast('Erro ao publicar: ' + error.message); posts.unshift(data); }
   $('compTxt').value = ''; anexos = []; midias = []; nota = 0; tipo = 'geral'; fecharComp(); renderTudo(); toast(susp ? 'Enviado para análise da moderação antes de aparecer no feed.' : 'Publicado!');
+}
+
+// Publicação programática (usada pelo módulo de Leituras): mesma moderação do compositor
+async function publicarPost(b) {
+  if (!logado()) return false;
+  const p = { usuario_id: eu().id, nome_usuario: eu().nome, tipo: b.tipo || 'lendo', texto: b.texto || '', livro_id: b.livro_id ?? null, livro_externo_titulo: b.livro_externo_titulo || null, nota: b.nota || null, livros: b.livros || [], midias: b.midias || [], progresso: b.progresso || null, curtidas: [], comentarios: [], denuncias: [], status: 'publicado', motivo: null };
+  const susp = STAFF() ? '' : suspeito(p.texto) || (MODERAR_MIDIA && p.midias.some(u => !CONFIAVEL.test(u)) ? 'Contém foto/GIF (revisão prévia)' : ''); if (susp) { p.status = 'pendente'; p.motivo = susp; }
+  if (local) { posts.unshift({ ...p, id: Date.now(), created_at: new Date().toISOString() }); salvarLocal(); }
+  else { let r = await supabaseClient.from('feed_posts').insert([p]).select().single(); if (r.error && /progresso/.test(r.error.message || '')) { const { progresso, ...sem } = p; r = await supabaseClient.from('feed_posts').insert([sem]).select().single(); }
+    if (r.error) { toast('Erro ao publicar: ' + r.error.message); return false; } posts.unshift(r.data); }
+  renderTudo(); if (susp) toast('Enviado para análise da moderação antes de aparecer no feed.'); return true;
 }
 
 // ---------- Compositor ----------
@@ -124,7 +137,7 @@ function cardPost(p) {
   return `<article class="post ${esc(p.tipo)}${p.status === 'removido' ? ' removido' : ''}" data-id="${p.id}"><div class="post-h">${av(p.nome_usuario, p.usuario_id)}<div class="who"><b data-act="perfil" data-u="${Number(p.usuario_id)}" style="cursor:pointer">${esc(p.nome_usuario || 'Usuário')}${meu ? ' <small>(você)</small>' : ''}</b><small>${quando(p.created_at)}</small></div><span class="pill"><i class="fa-solid ${t[0]}"></i> ${t[1]}</span>${meu || STAFF() ? '<button class="act" data-act="del" title="Excluir post"><i class="fa-solid fa-trash"></i></button>' : '<button class="act" data-act="denunciar" title="Denunciar"><i class="fa-regular fa-flag"></i></button>'}</div>
 ${aviso(p, meu)}${p.nota ? `<div class="rate">${'★'.repeat(p.nota)}${'☆'.repeat(5 - p.nota)}</div>` : ''}
 <div class="post-t">${esc(longo ? p.texto.slice(0, 300) + '…' : p.texto)}${p.texto.length > 300 ? ` <a href="#" data-act="mais" class="link" style="color:var(--link)">${ver ? 'ver menos' : 'ver mais'}</a>` : ''}</div>
-${blocoMidia(p)}${blocoLivros(p, true)}
+${p.progresso ? blocoProgresso(p) : ''}${blocoMidia(p)}${p.progresso ? '' : blocoLivros(p, true)}
 <div class="acts"><button class="act${curt ? ' on' : ''}" data-act="like"><i class="fa-${curt ? 'solid' : 'regular'} fa-heart"></i> ${(p.curtidas || []).length || ''} Curtir</button><button class="act" data-act="cmt"><i class="fa-regular fa-comment"></i> ${cm.length || ''} Comentar</button></div>
 <div class="cmts hidden">${cm.map((c, i) => `<div class="cmt"><b>${esc(c.nome)}</b>${esc(c.texto)}${+c.uid === +eu().id ? ` <button class="act" data-act="delc" data-i="${i}" style="display:inline-flex;padding:2px 6px"><i class="fa-solid fa-xmark"></i></button>` : ''}</div>`).join('')}<div class="cmt-f"><input maxlength="300" placeholder="Escreva um comentário…"><button class="btn btn-primary btn-sm" data-act="send">Enviar</button></div></div></article>`;
 }
@@ -158,13 +171,15 @@ function renderTudo() { renderMod(); renderHero(); renderFeed(); renderFavs(); r
 
 // ---------- Abas ----------
 function aba(n) {
-  if (!['feed', 'favoritos', 'reservas', 'chat', 'perfil', ...(STAFF() ? ['moderacao'] : [])].includes(n)) n = 'feed';
+  if (!['feed', 'leituras', 'favoritos', 'reservas', 'chat', 'perfil', ...(STAFF() ? ['moderacao'] : [])].includes(n)) n = 'feed';
   document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + n));
   document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === n));
   if (n === 'perfil') renderPerfilForm();
+  if (n === 'leituras') window.Leituras?.render();
   history.replaceState(null, '', '#' + n);
 }
 window.MinhaArea = { render: renderTudo, aba, onChatBadge: n => { const b = $('tabBadge'); if (b) { b.textContent = n; b.classList.toggle('hidden', !n); } } };
+Object.assign(window.MinhaArea, { publicarPost, toast, lerImg, eu, livro });
 window.carregarPerfilUsuario = () => { if (logado()) renderTudo(); };
 
 // ---------- Eventos ----------

@@ -44,11 +44,11 @@ async function iniciarSuporte() {
 }
 
 // ---------- Gestão: abas ----------
-const GP = { usuarios: 'gpUsuarios', relatorios: 'gpRelatorios', mensagens: 'gpMensagens' };
+const GP = { usuarios: 'gpUsuarios', relatorios: 'gpRelatorios', mensagens: 'gpMensagens', personalizacao: 'gpPersonalizacao', dados: 'gpDados' };
 function aba(n) {
   if (!GP[n]) n = 'usuarios'; Object.entries(GP).forEach(([k, id]) => { const e = document.getElementById(id); if (e) e.style.display = k === n ? 'block' : 'none'; });
   $$('#hubGestao [data-gp]').forEach(b => b.setAttribute('aria-selected', b.dataset.gp === n)); history.replaceState(null, '', '#' + n);
-  if (n === 'relatorios') relatorios(); if (n === 'mensagens') inbox();
+  if (n === 'relatorios') relatorios(); if (n === 'mensagens') inbox(); if (n === 'personalizacao') window.initPersonalizacao?.(); if (n === 'dados') window.initDados?.();
 }
 async function inbox() {
   await carregarMsgs(); const f = $('#msgFiltro').value, v = MSG.filter(m => !f || m.status === f), ab = MSG.filter(m => m.status === 'aberto').length;
@@ -92,7 +92,7 @@ function exportarRel() {
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob(['\ufeff' + rows.map(r => r.map(c).join(';')).join('\n')], { type: 'text/csv' })), download: 'relatorio-venous.csv' }); a.click(); URL.revokeObjectURL(a.href);
 }
 document.addEventListener('DOMContentLoaded', () => {
-  iniciarSuporte();
+  iniciarSuporte(); const tp = setInterval(() => { if (typeof usuarioAtual !== 'undefined' && String(usuarioAtual?.cargo || '').toLowerCase() === 'bibliotecario') { ['tabPz', 'tabDados'].forEach(i => { const t = document.getElementById(i); if (t) t.style.display = ''; }); } }, 200); setTimeout(() => clearInterval(tp), 8000);
   if ($('#hubGestao')) {
     $$('#hubGestao [data-gp]').forEach(b => b.onclick = () => aba(b.dataset.gp)); $('#relPer').onchange = relatorios; $('#msgFiltro').onchange = inbox; $('#relExport').onclick = exportarRel;
     $('#msgLista').onclick = e => { const b = e.target.closest('[data-res]'); if (b) resolver(b.dataset.res, b.closest('.msg-card')); };

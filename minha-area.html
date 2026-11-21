@@ -4,19 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
-    <title>Minha Área • Venous</title>
+    <title>Minha Área • R.A.I.L.D.A</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap-grid.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap-utilities.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="scripts/style.css">
+    <link rel="stylesheet" href="scripts/header.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer crossorigin="anonymous"></script>
+    <script src="scripts/tema.js"></script>
     <link rel="stylesheet" href="scripts/minha-area.css">
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="scripts/script.js" defer></script>
     <script src="scripts/gestao.js" defer></script>
     <script src="scripts/chat.js" defer></script>
     <script src="scripts/minha-area.js" defer></script>
+    <script src="scripts/leituras.js" defer></script>
     <meta name="theme-color" content="#0369a1">
     <link rel="stylesheet" href="scripts/mobile.css">
+    <script src="scripts/header.js" defer></script>
     <script src="scripts/mobile.js" defer></script>
 </head>
 <body data-acesso="logado">
@@ -25,8 +32,8 @@
     <div class="header-content">
         <div class="logo-box">
             <div>
-                <h1>Venous</h1>
-                <h3>Painel do Leitor & Social</h3>
+                <h1 title="Recuperação Ampliada de Informação e Logística de Dados e Armazenamento">R.A.I.L.D.A</h1>
+                <h3>Recuperação Ampliada de Informação e Logística de Dados e Armazenamento</h3>
             </div>
         </div>
         <div class="user-panel">
@@ -65,6 +72,7 @@
   <div class="tabs" role="tablist">
     <a href="index.html"><i class="fa-solid fa-magnifying-glass"></i> Consulta</a>
     <button role="tab" data-tab="feed"><i class="fa-solid fa-newspaper"></i> Feed</button>
+    <button role="tab" data-tab="leituras"><i class="fa-solid fa-book-open-reader"></i> Leituras</button>
     <button role="tab" data-tab="favoritos"><i class="fa-solid fa-heart"></i> Favoritos</button>
     <button role="tab" data-tab="reservas"><i class="fa-solid fa-bookmark"></i> Reservas</button>
     <button role="tab" data-tab="chat"><i class="fa-solid fa-comments"></i> Chat <span id="tabBadge" class="chat-badge hidden">0</span></button>
@@ -88,6 +96,12 @@
     </div>
     <aside class="side"><div class="box"><h4>Minhas reservas <a href="#reservas" data-go="reservas" class="muted">ver todas</a></h4><div id="sideRes"></div></div><div class="box"><h4>Favoritos recentes <a href="#favoritos" data-go="favoritos" class="muted">ver todos</a></h4><div id="sideFav"></div></div></aside>
   </div></section>
+  <section class="pane" id="pane-leituras">
+    <div class="kpis" id="rdKpis"></div>
+    <div class="rd-grid"><div class="box"><h4>Páginas lidas por dia <small class="muted">(últimos 14 dias)</small></h4><div id="rdBars"></div></div><div class="box"><h4>Resumo de páginas</h4><div id="rdPeriodos"></div></div></div>
+    <div class="toolbar"><div class="chips" id="rdAbas"></div><span style="flex:1"></span><button class="btn btn-primary" id="rdAdd"><i class="fa-solid fa-circle-plus"></i> Adicionar livro</button></div>
+    <div class="rd-estante" id="rdLista"></div>
+  </section>
   <section class="pane" id="pane-favoritos"><div class="toolbar"><input id="favQ" type="search" placeholder="Buscar nos favoritos…"></div><div class="favs" id="meusFavoritosContainer"></div></section>
   <section class="pane" id="pane-reservas"><div class="toolbar"><select id="resFiltro"><option value="">Todos os status</option><option>Pendente</option><option>Concluida</option><option>Cancelada</option></select></div><div class="box" id="tbMinhasReservas"></div></section>
   <section class="pane" id="pane-chat">
@@ -127,7 +141,7 @@
     <button class="btn btn-primary" style="margin-top:12px" onclick="salvarLivroLeituraConjunta()">Salvar</button></div></div>
 
 <footer class="footer-bar">
-    <p>© 2026 • Venous — Todos os direitos reservados.</p>
+    <p>© 2026 • R.A.I.L.D.A — Todos os direitos reservados.</p>
 </footer>
 </body>
 </html>

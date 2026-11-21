@@ -31,7 +31,7 @@ function notificar(nome, texto) {
     tocarSomNotificacao();
     if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
         try {
-            const n = new Notification(`Venous • ${nome}`, { body: texto.length > 80 ? texto.slice(0, 80) + '…' : texto, tag: 'venous-chat' });
+            const n = new Notification(`R.A.I.L.D.A • ${nome}`, { body: texto.length > 80 ? texto.slice(0, 80) + '…' : texto, tag: 'venous-chat' });
             n.onclick = () => { window.focus(); n.close(); };
         } catch (_) {}
     }

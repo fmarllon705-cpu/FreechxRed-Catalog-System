@@ -37,7 +37,11 @@ function barrasRects(code, x, y, w, h) {
 
 // ---------- Texto ----------
 const san = s => String(s ?? '').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-').replace(/…/g, '...').replace(/[^\x20-\x7E\xA0-\xFF]/g, '?');
-function med() { if (!doc0) { const { jsPDF } = window.jspdf || window.web_jspdf; doc0 = new jsPDF({ unit: 'mm', format: 'a4' }); } return (s, pt, b) => { doc0.setFont('helvetica', b ? 'bold' : 'normal'); doc0.setFontSize(pt); return doc0.getTextWidth(s); }; }
+function med() {                                                                       // mede texto com o jsPDF; se ele não carregou, usa o canvas do navegador
+  const J = (window.jspdf || window.web_jspdf)?.jsPDF;
+  if (J) { if (!doc0) doc0 = new J({ unit: 'mm', format: 'a4' }); return (s, pt, b) => { doc0.setFont('helvetica', b ? 'bold' : 'normal'); doc0.setFontSize(pt); return doc0.getTextWidth(s); }; }
+  const cx = (med.cv ||= document.createElement('canvas')).getContext('2d'); return (s, pt, b) => { cx.font = `${b ? 'bold ' : ''}${pt}pt Helvetica, Arial, sans-serif`; return cx.measureText(s).width * 25.4 / 96; };
+}
 function quebrar(txt, larg, pt, b, max, m) {
   const pal = san(txt).split(/\s+/).filter(Boolean), out = []; let l = '';
   for (const p of pal) { const t = l ? l + ' ' + p : p; if (m(t, pt, b) <= larg || !l) l = t; else { out.push(l); l = p; } }
@@ -97,7 +101,7 @@ function gerarPDF(abrir) {
       if (p.k === 't') { d.setFont('helvetica', p.b ? 'bold' : 'normal'); d.setFontSize(p.pt); d.text(p.s, e.x + p.x, e.y + p.y, { align: p.al === 'c' ? 'center' : 'left', charSpace: p.cs }); }
       else if (p.k === 'bars') barrasRects(p.code, e.x + p.x, e.y + p.y, p.w, p.h).forEach(r => d.rect(r[0], r[1], r[2], r[3], 'F'));
       else if (p.k === 'ln') { d.setDrawColor(100); d.setLineWidth(0.15); d.setLineDashPattern([1, 1], 0); d.line(e.x + p.x1, e.y + p.y1, e.x + p.x2, e.y + p.y2); d.setLineDashPattern([], 0); } }); }); });
-  if (abrir) window.open(d.output('bloburl'), '_blank'); else d.save('etiquetas-venous.pdf');
+  if (abrir) window.open(d.output('bloburl'), '_blank'); else d.save('etiquetas-railda.pdf');
   marcarImpressas(); toast(`PDF gerado com ${pgs.flat().length} etiqueta(s).`);
 }
 async function marcarImpressas() {

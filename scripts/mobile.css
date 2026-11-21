@@ -90,3 +90,20 @@
   .etq-sel .i{white-space:normal}
 }
 @media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){#subTabContentEtiquetas .toolbar>input,#subTabContentEtiquetas .toolbar>select{flex:1 1 100%}#subTabContentEtiquetas .toolbar>.btn{flex:1 1 calc(50% - 8px)}}
+@media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){
+  .busca-linha{grid-template-columns:1fr}.busca-filtros select{flex:1 1 100%}.busca-filtros .chips{width:100%}.busca-filtros .chip{flex:1}
+  .rd-card .cv{width:60px;height:88px}.rd-act input{flex:1 1 100%;width:auto}.rd-act .btn{flex:1 1 calc(50% - 6px)}
+  .kpis{grid-template-columns:repeat(2,1fr)}.rd-bars{height:120px}
+  .cf-grid{grid-template-columns:1fr}.prog-card{align-items:flex-start}.pz-grid{grid-template-columns:1fr}
+  .modal-box.rd-wide{max-height:92dvh;overflow-y:auto}
+}
+@media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){.io-map{grid-template-columns:1fr}.io-drop{padding:20px 10px}.io-log{max-height:150px}}
+/* Acervo no celular: busca compacta para as capas aparecerem logo */
+@media (max-width:768px),(hover:none) and (pointer:coarse) and (max-width:1100px){
+  .busca-adv{gap:8px}.busca-linha{grid-template-columns:42% 1fr;gap:6px}
+  .busca-filtros{gap:6px}.busca-filtros .chips{flex:1 1 100%;flex-wrap:nowrap}.busca-filtros .chip{padding:5px 6px;font-size:.74rem;white-space:nowrap}
+  .busca-filtros select{flex:1 1 calc(50% - 3px);min-width:0;min-height:40px;padding:6px 8px;font-size:.8rem}
+  #buscaInfo{font-size:.74rem;padding:6px 10px}#buscaInfo .btn{min-height:32px;padding:4px 10px}
+  .acervo-toolbar{gap:6px}.acervo-toolbar .btn-view-toggle{padding:6px 4px;font-size:.76rem;min-height:36px;line-height:1.15}
+  .capa-acoes .btn:first-child{font-size:.72rem}.acervo-rodape .btn{width:100%}
+}

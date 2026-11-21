@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
-    <title>Catalogação & Acervo • Venous</title>
+    <title>Catalogação & Acervo • R.A.I.L.D.A</title>
 
     <!-- Fontes e Ícones -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +13,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS Principal -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap-grid.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap-utilities.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="scripts/style.css">
+    <link rel="stylesheet" href="scripts/header.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer crossorigin="anonymous"></script>
+    <script src="scripts/tema.js"></script>
 
     <!-- Dependências JS -->
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -27,7 +32,9 @@
     <link rel="stylesheet" href="scripts/mobile.css">
     <script src="scripts/hub.js" defer></script>
     <script src="scripts/etiquetas.js" defer></script>
+    <script src="scripts/capas.js" defer></script>
     <script src="scripts/menu.js" defer></script>
+    <script src="scripts/header.js" defer></script>
     <script src="scripts/mobile.js" defer></script>
 </head>
 <body data-acesso="staff">
@@ -38,8 +45,8 @@
         <div class="logo-title">
             <div class="logo-box">
                 <div>
-                    <h1>Venous</h1>
-                    <h3>Módulo Técnico de Catalogação MARC21</h3>
+                    <h1 title="Recuperação Ampliada de Informação e Logística de Dados e Armazenamento">R.A.I.L.D.A</h1>
+                    <h3>Recuperação Ampliada de Informação e Logística de Dados e Armazenamento</h3>
                 </div>
             </div>
         </div>
@@ -186,7 +193,7 @@
                                 </div>
                                 <div class="form-group" id="grp_fonte_catalogacao">
                                     <label for="fonte_catalogacao">Fonte da Catalogação <span class="marc-code">(MARC 040)</span></label>
-                                    <input id="fonte_catalogacao" type="text" placeholder="Ex: Venous">
+                                    <input id="fonte_catalogacao" type="text" placeholder="Ex: R.A.I.L.D.A">
                                 </div>
                                 <div class="form-group" id="grp_codigo_idioma">
                                     <label for="codigo_idioma">Código do Idioma <span class="marc-code">(MARC 041)</span></label>
@@ -459,7 +466,7 @@
 <div class="hint"><i class="fa-solid fa-cloud"></i> O registro fica guardado na nuvem para estatísticas, mesmo após a saída do acervo.</div>
 <div class="btn-group" style="justify-content:flex-end"><button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').classList.remove('active')">Cancelar</button><button type="button" class="btn btn-danger" id="desConfirma" disabled><i class="fa-solid fa-cloud-arrow-up"></i> Desbastar e arquivar</button></div></div></div>
 <footer class="footer-bar">
-    <p>© 2026 • Venous — Desenvolvido por malo. Todos os direitos reservados.</p>
+    <p>© 2026 • R.A.I.L.D.A — Desenvolvido por malo. Todos os direitos reservados.</p>
 </footer>
 
 </body>

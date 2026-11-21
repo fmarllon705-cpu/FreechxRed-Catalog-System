@@ -670,7 +670,7 @@ function verCIP(id) {
 
     area.innerHTML = `
         <div style="text-align:center; font-weight:bold; margin-bottom:8px; font-size:0.8rem;">
-            Dados Internacionais de Catalogação na Publicação (CIP)<br>Venous
+            Dados Internacionais de Catalogação na Publicação (CIP)<br>R.A.I.L.D.A
         </div>
         <hr style="border: 0; border-top: 1px solid #000; margin: 6px 0;">
         <div style="margin-left: 20px; text-indent: -20px;">
@@ -1065,7 +1065,7 @@ function gerarFolhaA4Etiquetas() {
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>Impressão de Etiquetas A4 - Venous</title>
+            <title>Impressão de Etiquetas A4 - R.A.I.L.D.A</title>
             <style>
                 @page { size: A4; margin: 10mm; }
                 body { font-family: 'Courier New', Courier, monospace; background: #fff; color: #000; margin: 0; padding: 0; }

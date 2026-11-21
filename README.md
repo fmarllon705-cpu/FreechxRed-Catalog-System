@@ -253,7 +253,7 @@ scripts/
 
 ## 🙏 Créditos
 
-Idealizado e desenvolvido por **malo**, com a colaboração de **Claude** (Anthropic) na construção do código.
+Idealizado e desenvolvido por **Marllon Ferreira Malcher**, com a colaboração de **Claude** (Anthropic) na construção do código.
 
 O R.A.I.L.D.A só faz sentido se for usado, adaptado e compartilhado. **Boa leitura e bom código!** 📚
 
